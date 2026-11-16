@@ -50,7 +50,11 @@ The existing `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` secrets are reused. Sup
 
 The function rejects group chats and messages from any private chat other than the configured `TELEGRAM_CHAT_ID`. The webhook itself is authenticated using Telegram's `X-Telegram-Bot-Api-Secret-Token` header. The setup endpoint uses a different secret.
 
-## Feedback privacy\n\nThe GitHub repository is public. The bot never copies feedback text into GitHub merely because `/feedback` was requested. `/issue ID` shows a private preview and warning; only the separate `/publish ID` command creates a public Issue containing that feedback. Do not publish feedback that includes personal or sensitive information.\n\n## Claude execution and safety
+## Feedback privacy
+
+The GitHub repository is public. The bot never copies feedback text into GitHub merely because `/feedback` was requested. `/issue ID` shows a private preview and warning; only the separate `/publish ID` command creates a public Issue containing that feedback. Do not publish feedback that includes personal or sensitive information.
+
+## Claude execution and safety
 
 - The workflow accepts only a positive Issue number and checks that the Issue is open and not a pull request.
 - Claude reads `CLAUDE.md`, treats Issue content as untrusted input, and is instructed to create a draft PR targeting `main`.
