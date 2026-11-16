@@ -66,4 +66,4 @@ jobs:
             Follow the repository's existing conventions. Do not expose secrets in logs, comments, or files.
           claude_args: |
             --max-turns 30
-            --allowedTools "Bash(npm run build),Bash(node tests/smoke.mjs),Bash(node tests/tokens-check.mjs),Bash(node tests/edge/push-fcm.test.mjs),Bash(node tests/intro.mjs),Bash(node tests/pres-ui.mjs),Bash(node tests/live-ui.mjs),Bash(node tests/studio-ui.mjs),Bash(node tests/control-ui.mjs),Bash(git diff --check),Read,Edit,Write,Glob,Grep"
+            --allowedTools "Bash(npm run build),Bash(node tests/smoke.mjs),Bash(node tests/tokens-check.mjs),Bash(node tests/edge/push-fcm.test.mjs),Bash(node tests/edge/telegram-control.test.mjs),Bash(node tests/intro.mjs),Bash(node tests/pres-ui.mjs),Bash(node tests/live-ui.mjs),Bash(node tests/studio-ui.mjs),Bash(node tests/control-ui.mjs),Bash(git diff --check),Read,Edit,Write,Glob,Grep"
