@@ -34,7 +34,7 @@ export function parseCommand(text: string): { command: string; issueNumber?: num
   const match = text.trim().match(/^\/(feedback|fix|status|prs|help)(?:@[A-Za-z0-9_]+)?(?:\s+([1-9][0-9]{0,7}))?\s*$/i);
   if (!match) return null;
   const command = match[1].toLowerCase();
-  if (command === "fix") {
+  if (command === "fix" || command === "issue") {
     const issueNumber = Number(match[2]);
     return Number.isSafeInteger(issueNumber) && issueNumber > 0 ? { command, issueNumber } : null;
   }
