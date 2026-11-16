@@ -76,7 +76,6 @@ async function syncFeedback(): Promise<string> {
         body: JSON.stringify({
           title: feedbackIssueTitle(row),
           body: feedbackIssueBody(row),
-          labels: ["user-feedback"],
         }),
       });
       issues.unshift(issue);
