@@ -31,10 +31,10 @@ export function isAuthorizedPrivateMessage(update: TelegramUpdate, expectedChatI
 }
 
 export function parseCommand(text: string): { command: string; issueNumber?: number } | null {
-  const match = text.trim().match(/^\/(feedback|fix|status|prs|help)(?:@[A-Za-z0-9_]+)?(?:\s+([1-9][0-9]{0,7}))?\s*$/i);
+  const match = text.trim().match(/^\/(feedback|issue|publish|fix|status|prs|help)(?:@[A-Za-z0-9_]+)?(?:\s+([1-9][0-9]{0,7}))?\s*$/i);
   if (!match) return null;
   const command = match[1].toLowerCase();
-  if (command === "fix" || command === "issue") {
+  if (command === "fix" || command === "issue" || command === "publish") {
     const issueNumber = Number(match[2]);
     return Number.isSafeInteger(issueNumber) && issueNumber > 0 ? { command, issueNumber } : null;
   }
