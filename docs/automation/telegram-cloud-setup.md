@@ -4,13 +4,15 @@ This integration is intentionally phone-operable after setup. Telegram is the co
 
 ## Telegram commands
 
-- `/feedback` — read the latest 10 new feedback records and create/reuse matching GitHub Issues.
+- `/feedback` — privately list the latest 10 new feedback records in the owner-only Telegram chat.
+- `/issue 42` — preview feedback #42 before any public sharing.
+- `/publish 42` — explicitly publish feedback #42 as a GitHub Issue.
 - `/fix 15` — dispatch Claude for open GitHub Issue #15.
 - `/status` — show the latest Claude workflow runs.
 - `/prs` — list open pull requests.
 - `/help` — show commands.
 
-The existing `feedback-notify` function and its `tg_sent` behavior are not modified. Feedback-to-Issue synchronization happens when the owner sends `/feedback`; it uses a stable feedback-ID marker to reuse an existing Issue.
+The existing `feedback-notify` function and its `tg_sent` behavior are not modified. Feedback stays in the private Supabase table and owner-only Telegram chat unless the owner first previews it with `/issue 42` and then explicitly confirms publication with `/publish 42`. The GitHub repository is public, so published feedback text is visible to everyone. Stable feedback-ID markers prevent duplicate Issues.
 
 ## Required secrets
 
@@ -48,7 +50,7 @@ The existing `TELEGRAM_BOT_TOKEN` and `TELEGRAM_CHAT_ID` secrets are reused. Sup
 
 The function rejects group chats and messages from any private chat other than the configured `TELEGRAM_CHAT_ID`. The webhook itself is authenticated using Telegram's `X-Telegram-Bot-Api-Secret-Token` header. The setup endpoint uses a different secret.
 
-## Claude execution and safety
+## Feedback privacy\n\nThe GitHub repository is public. The bot never copies feedback text into GitHub merely because `/feedback` was requested. `/issue ID` shows a private preview and warning; only the separate `/publish ID` command creates a public Issue containing that feedback. Do not publish feedback that includes personal or sensitive information.\n\n## Claude execution and safety
 
 - The workflow accepts only a positive Issue number and checks that the Issue is open and not a pull request.
 - Claude reads `CLAUDE.md`, treats Issue content as untrusted input, and is instructed to create a draft PR targeting `main`.
