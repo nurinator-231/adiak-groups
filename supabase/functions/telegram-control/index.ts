@@ -65,25 +65,33 @@ async function syncFeedback(): Promise<string> {
   const rows = (data || []) as FeedbackRow[];
   if (!rows.length) return "Hazırda yeni feedback yoxdur.";
 
+  return `<b>Yeni feedback-lər (${rows.length})</b>\n` + rows.map((row) => {
+    const excerpt = row.body.replace(/\s+/g, " ").trim().slice(0, 130);
+    return `• <b>#${row.id}</b> [${escapeHtml(row.class_tag || "Sinif qeyd edilməyib")}] — ${escapeHtml(excerpt)}\n  GitHub-da paylaşmaq üçün: <code>/issue ${row.id}</code>`;
+  }).join("\n");
+}
+
+async function createFeedbackIssue(feedbackId: number): Promise<string> {
+  if (!db) throw new Error("Supabase is not configured");
+  const { data, error } = await db.from("feedback")
+    .select("id,body,class_tag,created_at")
+    .eq("id", feedbackId)
+    .eq("status", "new")
+    .maybeSingle();
+  if (error) throw new Error("Could not read selected feedback");
+  if (!data) return `Yeni feedback #${feedbackId} tapılmadı.`;
+  const row = data as FeedbackRow;
+  const marker = feedbackMarker(row.id);
   const existing = await github(repoPath("/issues?state=all&per_page=100"));
   const issues = Array.isArray(existing) ? existing : [];
-  const output: string[] = [];
-  for (const row of rows) {
-    const marker = feedbackMarker(row.id);
-    let issue = issues.find((item: { body?: string | null; number?: number; html_url?: string }) => item.body?.includes(marker));
-    if (!issue) {
-      issue = await github(repoPath("/issues"), {
-        method: "POST",
-        body: JSON.stringify({
-          title: feedbackIssueTitle(row),
-          body: feedbackIssueBody(row),
-        }),
-      });
-      issues.unshift(issue);
-    }
-    output.push(`#${issue.number} — <a href="${issue.html_url}">GitHub Issue</a>`);
+  let issue = issues.find((item: { body?: string | null; number?: number; html_url?: string }) => item.body?.includes(marker));
+  if (!issue) {
+    issue = await github(repoPath("/issues"), {
+      method: "POST",
+      body: JSON.stringify({ title: feedbackIssueTitle(row), body: feedbackIssueBody(row) }),
+    });
   }
-  return `<b>Yeni feedback-lər (${rows.length})</b>\n${output.join("\n")}\n\nDüzəliş başlatmaq üçün: <code>/fix ISSUE_NUMBER</code>`;
+  return `<b>Feedback GitHub Issue-ya əlavə edildi.</b>\n<a href="${issue.html_url}">Issue #${issue.number}</a>\nDiqqət: ADIAK repozitoriyası public olduğuna görə bu feedback mətni GitHub-da hamıya görünəcək.`;
 }
 
 async function startFix(issueNumber: number): Promise<string> {
@@ -156,10 +164,11 @@ Deno.serve(async (req) => {
   try {
     let answer = "";
     if (command.command === "feedback") answer = await syncFeedback();
+    else if (command.command === "issue") answer = await createFeedbackIssue(command.issueNumber!);
     else if (command.command === "fix") answer = await startFix(command.issueNumber!);
     else if (command.command === "status") answer = await status();
     else if (command.command === "prs") answer = await openPullRequests();
-    else answer = "<b>ADIAK idarəetmə</b>\n<code>/feedback</code> — yeni feedback-ləri GitHub Issue-larına sinxronlaşdır\n<code>/fix 15</code> — Issue #15 üçün Claude-u işə sal\n<code>/status</code> — son Claude işlərinin vəziyyəti\n<code>/prs</code> — açıq PR-lər";
+    else answer = "<b>ADIAK idarəetmə</b>\n<code>/feedback</code> — yeni feedback-ləri şəxsi çatda göstər\n<code>/issue 42</code> — feedback #42-ni public GitHub Issue et\n<code>/fix 15</code> — Issue #15 üçün Claude-u işə sal\n<code>/status</code> — son Claude işlərinin vəziyyəti\n<code>/prs</code> — açıq PR-lər";
     await reply(chatId, answer);
     return json({ ok: true });
   } catch (error) {
