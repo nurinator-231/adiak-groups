@@ -11,6 +11,7 @@ const SERVICE_ROLE = env("SUPABASE_SERVICE_ROLE_KEY");
 const BOT_TOKEN = env("TELEGRAM_BOT_TOKEN");
 const CHAT_ID = env("TELEGRAM_CHAT_ID");
 const WEBHOOK_SECRET = env("TELEGRAM_WEBHOOK_SECRET");
+const SETUP_SECRET = env("TELEGRAM_SETUP_SECRET");
 const GITHUB_TOKEN = env("GITHUB_TOKEN");
 const GITHUB_REPOSITORY = env("GITHUB_REPOSITORY");
 const WORKFLOW_FILE = "telegram-claude-fix.yml";
@@ -116,6 +117,25 @@ async function openPullRequests(): Promise<string> {
 
 Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ ok: false, error: "method_not_allowed" }, 405);
+  if (SETUP_SECRET && safeEqual(req.headers.get("x-telegram-setup-secret") || "", SETUP_SECRET)) {
+    const setup = await req.json().catch(() => null) as { action?: string } | null;
+    if (setup?.action !== "set_webhook" || !BOT_TOKEN || !WEBHOOK_SECRET || !SUPABASE_URL) {
+      return json({ ok: false, error: "invalid_setup_request" }, 400);
+    }
+    try {
+      await telegram("setWebhook", {
+        url: `${SUPABASE_URL.replace(/\\/$/, "")}/functions/v1/telegram-control`,
+        secret_token: WEBHOOK_SECRET,
+        allowed_updates: ["message"],
+        drop_pending_updates: false,
+      });
+      return json({ ok: true, webhook_configured: true });
+    } catch (error) {
+      console.error("telegram webhook setup:", String(error));
+      return json({ ok: false, error: "webhook_setup_failed" }, 502);
+    }
+  }
+
   if (!WEBHOOK_SECRET || !safeEqual(req.headers.get("x-telegram-bot-api-secret-token") || "", WEBHOOK_SECRET)) {
     return json({ ok: false, error: "unauthorized" }, 401);
   }
