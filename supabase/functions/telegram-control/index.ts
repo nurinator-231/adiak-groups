@@ -71,6 +71,19 @@ async function syncFeedback(): Promise<string> {
   }).join("\n");
 }
 
+async function previewFeedbackIssue(feedbackId: number): Promise<string> {
+  if (!db) throw new Error("Supabase is not configured");
+  const { data, error } = await db.from("feedback")
+    .select("id,body,class_tag,created_at")
+    .eq("id", feedbackId)
+    .eq("status", "new")
+    .maybeSingle();
+  if (error) throw new Error("Could not read selected feedback");
+  if (!data) return `Yeni feedback #${feedbackId} tapılmadı.`;
+  const row = data as FeedbackRow;
+  return `<b>Feedback #${row.id} üçün önbaxış</b>\n${escapeHtml(row.body.slice(0, 500))}\n\nDiqqət: repozitoriya public-dır. <b>/publish ${row.id}</b> yazsan, feedback mətni GitHub-da hamıya açıq olacaq. Paylaşmaq istəmirsənsə, heç nə etmə.`;
+}
+
 async function createFeedbackIssue(feedbackId: number): Promise<string> {
   if (!db) throw new Error("Supabase is not configured");
   const { data, error } = await db.from("feedback")
@@ -164,11 +177,12 @@ Deno.serve(async (req) => {
   try {
     let answer = "";
     if (command.command === "feedback") answer = await syncFeedback();
-    else if (command.command === "issue") answer = await createFeedbackIssue(command.issueNumber!);
+    else if (command.command === "issue") answer = await previewFeedbackIssue(command.issueNumber!);
+    else if (command.command === "publish") answer = await createFeedbackIssue(command.issueNumber!);
     else if (command.command === "fix") answer = await startFix(command.issueNumber!);
     else if (command.command === "status") answer = await status();
     else if (command.command === "prs") answer = await openPullRequests();
-    else answer = "<b>ADIAK idarəetmə</b>\n<code>/feedback</code> — yeni feedback-ləri şəxsi çatda göstər\n<code>/issue 42</code> — feedback #42-ni public GitHub Issue et\n<code>/fix 15</code> — Issue #15 üçün Claude-u işə sal\n<code>/status</code> — son Claude işlərinin vəziyyəti\n<code>/prs</code> — açıq PR-lər";
+    else answer = "<b>ADIAK idarəetmə</b>\n<code>/feedback</code> — yeni feedback-ləri şəxsi çatda göstər\n<code>/issue 42</code> — paylaşmadan əvvəl önbaxış göstər\n<code>/publish 42</code> — feedback #42-ni public GitHub Issue et\n<code>/fix 15</code> — Issue #15 üçün Claude-u işə sal\n<code>/status</code> — son Claude işlərinin vəziyyəti\n<code>/prs</code> — açıq PR-lər";
     await reply(chatId, answer);
     return json({ ok: true });
   } catch (error) {
