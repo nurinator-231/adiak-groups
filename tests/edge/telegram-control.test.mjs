@@ -19,6 +19,7 @@ ok(parseCommand("/feedback")?.command === "feedback", "/feedback parsed");
 ok(parseCommand("/feedback@adiak_bot")?.command === "feedback", "Telegram bot command suffix parsed");
 ok(parseCommand("/fix 15")?.issueNumber === 15, "/fix issue number parsed");
 ok(parseCommand("/issue 42")?.issueNumber === 42 && parseCommand("/publish 42")?.issueNumber === 42, "feedback preview and explicit publish commands parsed");
+ok(parseCommand("/publish") === null && parseCommand("/issue 0") === null, "public publish requires a valid feedback ID");
 ok(parseCommand("/fix") === null && parseCommand("/fix 0") === null && parseCommand("/fix 1.5") === null, "invalid fix arguments rejected");
 ok(parseCommand("/status")?.command === "status" && parseCommand("/prs")?.command === "prs" && parseCommand("/help")?.command === "help", "status, prs and help parsed");
 ok(parseCommand("/prs 3") === null && parseCommand("/unknown") === null, "unexpected arguments and unknown commands rejected");
