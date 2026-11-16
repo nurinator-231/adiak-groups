@@ -1,0 +1,6 @@
+project_id = "epenklutnevjvgpsjehp"
+
+# Telegram sends webhook updates directly; authentication is enforced by the
+# Telegram secret-token header in the function itself.
+[functions.telegram-control]
+verify_jwt = false
