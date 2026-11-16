@@ -33,7 +33,7 @@ Add:
 
 | Secret | Purpose |
 |---|---|
-| `GITHUB_TOKEN` | Fine-grained token restricted to this repository. Grant Actions: Read and write; Issues: Read and write; Pull requests: Read-only. It is used to sync feedback Issues, dispatch the workflow, and read run/PR status. |
+| `GITHUB_TOKEN` | Fine-grained token restricted to this repository. Grant Actions: Read and write; Issues: Read and write; Pull requests: Read-only. It is used to create explicitly approved feedback Issues, dispatch the workflow, and read run/PR status. |
 | `GITHUB_REPOSITORY` | `nurinator-231/adiak-groups` |
 | `TELEGRAM_WEBHOOK_SECRET` | Random secret used by Telegram's webhook header. |
 | `TELEGRAM_SETUP_SECRET` | Same value as the GitHub repository secret above. |
