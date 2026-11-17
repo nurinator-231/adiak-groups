@@ -37,9 +37,12 @@ select test.eq((select count(*)::int from public.messages where channel = 'p:' |
 select test.lives($q$select public.send_message('g:1', 'team chat')$q$, 'existing team chat unchanged');
 select test.throws($q$select public.send_message('g:2', 'x')$q$, 'invalid chat', 'existing other-team chat still blocked');
 select test.lives(format($q$select public.send_message('d:%s:%s', 'dm')$q$, least(test.id('s2'), test.id('s1')), greatest(test.id('s2'), test.id('s1'))), 'DMs unchanged');
--- close the day keeps event chats
+-- close the day (ADIAK 1.1): the finished event is archived together with its team chat; open events keep theirs
 select test.as(test.id('admin'));
 select test.lives($q$select public.admin_close_day('test', false)$q$, 'close the day works with event chats present');
 select test.as_db();
-select test.eq((select count(*)::int from public.messages where channel like 'p:%'), 5, 'event chats kept by close the day');
+select test.eq((select count(*)::int from public.messages where channel like 'p:' || :e || ':%'), 0, 'chat of the finished (archived) event moved to the archive');
+select test.eq((select count(*)::int from public.archived_messages where channel like 'p:' || :e || ':%'), 4, 'its 4 messages are in the archive');
+select test.eq((select count(*)::int from public.messages where channel like 'p:' || :e2 || ':%'), 1, 'chat of the still-open event kept');
+select test.ok((select archived_at is not null from public.pres_events where id = :e) and (select archived_at is null from public.pres_events where id = :e2), 'only the finished event archived');
 select test.eq((select count(*)::int from public.messages where channel not like 'p:%'), 0, 'other chats archived and cleared as before');

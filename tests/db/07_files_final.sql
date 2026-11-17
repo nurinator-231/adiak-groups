@@ -41,28 +41,26 @@ select test.eq((select md5(string_agg(name, ',' order by name)) from storage.obj
 select test.as(test.id('s1'));
 select test.as(test.id('tpres'));
 select test.eq((select count(*)::int from public.pres_files where event_id = :e), 2, 'class staff sees all team files');
--- final submission
+-- final submission (ADIAK 1.1): the chosen final is accepted at once, the team may replace it, staff may still return it
 select test.as(test.id('s3'));
-select test.lives(format('select public.pres_submit_final(%s, null)', :f1), 'member submits v1 as final');
+select test.lives(format('select public.pres_submit_final(%s, null)', :f1), 'member chooses v1 as final');
 select test.throws(format('select public.pres_submit_final(%s, null)', :f2), 'changed meanwhile', 'stale client (concurrent submit) rejected');
 select test.as_db();
-select id as s1 from public.pres_submissions where event_id = :e and state = 'submitted' \gset
+select test.eq((select state from public.pres_submissions where event_id = :e and version = 1), 'approved', 'final accepted at once, no teacher approval');
+select test.eq((select final_state from public.pres_event_teams where event_id = :e and group_id = 1), 'approved', 'team final state accepted');
+select id as s1 from public.pres_submissions where event_id = :e and state = 'approved' \gset
 select test.as(test.id('s2'));
-select test.lives(format('select public.pres_submit_final(%s, %s)', :f2, :s1), 'resubmission before review creates version 2');
+select test.lives(format('select public.pres_submit_final(%s, %s)', :f2, :s1), 'team replaces the accepted final with version 2');
 select test.as_db();
 select test.eq((select state from public.pres_submissions where id = :s1), 'superseded', 'version 1 kept as superseded');
-select id as s2 from public.pres_submissions where event_id = :e and state = 'submitted' \gset
+select id as s2 from public.pres_submissions where event_id = :e and state = 'approved' \gset
 select test.eq((select version from public.pres_submissions where id = :s2), 2, 'version numbering');
 select test.as(test.id('s1'));
-select test.throws(format('select public.pres_review_final(%s, ''approve'')', :s2), 'permission', 'student cannot approve a final');
+select test.throws(format('select public.pres_review_final(%s, ''approve'')', :s2), 'permission', 'student cannot use the staff review');
 select test.throws(format('select public.pres_hide_file(%s)', :f1), 'cannot be hidden|only the uploader', 'submitted file cannot be hidden');
-select test.as(test.id('tpres'));
-select test.lives(format('select public.pres_review_final(%s, ''approve'', ''Looks good'')', :s2), 'staff approves version 2');
-select test.as(test.id('s2'));
-select test.throws(format('select public.pres_submit_final(%s, %s)', :f1, :s2), 'approved final already exists', 'team cannot replace an approved final');
-select test.throws(format('select public.pres_hide_file(%s)', :f2), 'cannot be hidden', 'approved file cannot be hidden');
+select test.throws(format('select public.pres_hide_file(%s)', :f2), 'cannot be hidden|only the uploader', 'final file cannot be hidden');
 select test.as_db();
-select test.throws(format('update public.pres_submissions set file_id = %s where id = %s', :f1, :s2), 'protected', 'approved submission cannot be repointed (even by owner)');
+select test.throws(format('update public.pres_submissions set file_id = %s where id = %s', :f1, :s2), 'protected', 'accepted submission cannot be repointed (even by owner)');
 select test.throws(format('update public.pres_submissions set state = ''submitted'' where id = %s', :s2), 'invalid submission transition', 'approved -> submitted is illegal');
 select test.throws(format('delete from public.pres_submissions where id = %s', :s2), 'cannot be deleted', 'submissions cannot be deleted');
 select test.throws(format('delete from public.pres_files where id = %s', :f2), 'cannot be deleted', 'files cannot be deleted');
@@ -70,13 +68,15 @@ select test.throws(format($q$insert into public.pres_submissions(event_id, group
   'duplicate key', 'a second active/approved final is impossible (unique index)');
 select test.as(test.id('tpres'));
 select test.throws(format('select public.pres_review_final(%s, ''return'')', :s2), 'reason', 'return requires a note');
-select test.lives(format('select public.pres_review_final(%s, ''return'', ''Please fix slide 4'')', :s2), 'staff returns the approved final for corrections');
+select test.lives(format('select public.pres_review_final(%s, ''return'', ''Please fix slide 4'')', :s2), 'staff returns the accepted final for corrections');
 select test.as(test.id('s2'));
-select test.lives(format('select public.pres_submit_final(%s, null)', :f1), 'new submission after return');
+select test.lives(format('select public.pres_submit_final(%s, null)', :f1), 'new choice after return');
 select test.as_db();
-select test.eq((select max(version) from public.pres_submissions where event_id = :e), 3, 'new submission is version 3');
-select test.eq((select array_agg(state order by version) from public.pres_submissions where event_id = :e), array['superseded','returned','submitted'],
-  'complete version/approval history preserved');
+select test.eq((select max(version) from public.pres_submissions where event_id = :e), 3, 'new choice is version 3');
+select test.eq((select array_agg(state order by version) from public.pres_submissions where event_id = :e), array['superseded','returned','approved'],
+  'complete version history preserved');
+select test.ok(not exists(select 1 from public.notifications where kind = 'pres.final_approved' and user_id = test.id('s2') and params->>'v' = '3'), 'the student who chose it is not notified (no self-notification)');
+select test.ok(exists(select 1 from public.notifications where kind = 'pres.final_approved' and user_id = test.id('s1') and params->>'v' = '3'), 'team-mates told the final was selected');
 select test.ok((select count(*) >= 5 from public.pres_audit where entity = 'pres_submissions' and event_id = :e), 'every submission change audited');
 select test.ok(exists(select 1 from public.pres_audit where entity = 'pres_submissions' and reason = 'Please fix slide 4'), 'return reason stored in audit');
 -- hide/unhide drafts (audited)

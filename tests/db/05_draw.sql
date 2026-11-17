@@ -36,7 +36,7 @@ select test.lives(format('select public.pres_set_teams(%s, null, array[2]::bigin
 select test.as_db();
 select test.eq((select count(*)::int from public.pres_draws where event_id = :e and superseded_at is null), 0, 'team change invalidates the current draw');
 select test.eq((select status from public.pres_events where id = :e), 'open', 'event back to open: new draw required');
-select test.ok(exists(select 1 from public.notifications where kind = 'pres.redraw_needed'), 'staff told that a new draw is needed');
+select test.ok(not exists(select 1 from public.notifications where kind = 'pres.redraw_needed' and user_id = test.id('tpres')), 'the teacher who changed the teams is not notified about it (no self-notification)');
 select test.as(test.id('tpres'));
 select test.throws(format('select public.pres_draw(%s, 2, ''one team only'')', :e), 'two teams', 'a draw needs at least two teams');
 -- other class cannot add its team

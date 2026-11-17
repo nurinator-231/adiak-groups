@@ -12,26 +12,22 @@ select test.eq((select count(*)::int from public.pres_files where event_id = :e 
 select test.eq((select count(*)::int from public.pres_roster where event_id = :e and user_id = test.id('s3')), 1, 'former member still sees own history row');
 select test.eq((select count(*)::int from public.pres_my_history()), 1, '"My presentations" lists the event for the former member');
 select test.throws(format('select public.pres_pick(%s, 1)', :e), 'not in a team', 'former member cannot act');
--- (2) joiner gets a roster row; submitted order reopens
+-- (2) joiner gets a roster row; the accepted order reopens until the newcomer picks
 select test.as(test.id('s1')); select public.pres_pick(:e, 1);
-select test.as(test.id('s2')); select public.pres_pick(:e, 2); select public.pres_submit_order(:e);
+select test.as(test.id('s2')); select public.pres_pick(:e, 2);
 select test.as_db();
+select test.eq((select speak_state from public.pres_event_teams where event_id = :e and group_id = 1), 'approved', 'complete order accepted without approval');
 update public.profiles set group_id = 1 where id = test.id('s6');
 select test.ok(exists(select 1 from public.pres_roster where event_id = :e and user_id = test.id('s6') and group_id = 1 and left_at is null), 'joiner added to roster');
-select test.eq((select speak_state from public.pres_event_teams where event_id = :e and group_id = 1), 'open', 'submitted order reopened when a member joins');
--- (3) approved order: leaver marked withdrawn, state needs_review, cannot be approved until returned
+select test.eq((select speak_state from public.pres_event_teams where event_id = :e and group_id = 1), 'open', 'order reopened when a member joins');
+-- (3) accepted order: a leaver's pick is dropped and the remaining order stays accepted (no review step)
 select test.as(test.id('s6')); select public.pres_pick(:e, 3);
-select test.as(test.id('s2')); select public.pres_submit_order(:e);
-select test.as(test.id('s1')); select public.pres_approve_order(:e, 1);
 select test.as_db();
+select test.eq((select speak_state from public.pres_event_teams where event_id = :e and group_id = 1), 'approved', 'newcomer pick completes the order: accepted');
 update public.profiles set group_id = null where id = test.id('s6');
-select test.eq((select speak_state from public.pres_event_teams where event_id = :e and group_id = 1), 'needs_review', 'approved order -> needs_review');
-select test.ok((select withdrawn from public.pres_speakers where event_id = :e and user_id = test.id('s6')), 'leaver kept in approved order as withdrawn');
-select test.ok(exists(select 1 from public.notifications where kind = 'pres.order_review'), 'host/staff notified to review');
-select test.as(test.id('s1'));
-select test.throws(format('select public.pres_approve_order(%s, 1)', :e), 'no submitted order', 'needs_review cannot be approved directly');
-select test.lives(format('select public.pres_return_order(%s, 1, ''member left'')', :e), 'host returns a needs_review order');
-select test.as_db();
+select test.eq((select speak_state from public.pres_event_teams where event_id = :e and group_id = 1), 'approved', 'leaver does not block: remaining order still accepted');
+select test.ok(not exists(select 1 from public.pres_speakers where event_id = :e and user_id = test.id('s6')), 'leaver pick removed');
+select test.ok(exists(select 1 from public.notifications where kind = 'pres.order_review'), 'host/staff informed that a member left');
 select test.eq((select count(*)::int from public.pres_speakers where event_id = :e and withdrawn), 0, 'withdrawn slots removed on return');
 select test.ok((select count(*) from public.pres_speaker_log where event_id = :e and action in ('member_left','member_joined')) >= 3, 'membership changes in speaking-order history');
 -- (4) moving between teams: leaves team 1, joins team 2 in the same event
@@ -41,8 +37,7 @@ select test.ok(exists(select 1 from public.pres_roster where event_id = :e and u
 update public.profiles set group_id = 1 where id = test.id('s2');
 -- (5) freeze at live: participants keep read access forever, late joiners get none
 select test.as(test.id('s1')); select public.pres_pick(:e, 1);
-select test.as(test.id('s2')); select public.pres_pick(:e, 2); select public.pres_submit_order(:e);
-select test.as(test.id('s1')); select public.pres_approve_order(:e, 1);
+select test.as(test.id('s2')); select public.pres_pick(:e, 2);
 select test.as(test.id('tpres')); select public.pres_draw(:e, 0);
 select public.live_start(:e, 0);
 select test.as_db();
