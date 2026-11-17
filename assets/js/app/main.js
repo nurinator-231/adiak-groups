@@ -22,7 +22,7 @@ function confirmLogout(){ask(tr("Are you sure you want to log out?"),()=>logout(
 // Kick səsverməsi başlatır (yalnız qrup hostu)
 function kick(t){rpc("start_kick",{t}).then(ok=>{if(ok)toast(tr("Vote opened in the group chat"))})}
 // Yeni qrup yaratma pəncərəsi (limit yoxlanır)
-function newGroupForm(){const u=ME();if(visG().length>=maxG()){toast(tr("The group limit ({n}) is reached",{n:maxG()}),1);snd.err();return}if(u.is_admin||u.role==="teacher"||u.group_id!==null){toast(tr("Only idle students can create a group. Leave your group first."),1);snd.err();return}
+function newGroupForm(){const u=ME();if(visG().length>=maxG()){toast(tr("The group limit ({n}) is reached",{n:maxG()}),1);snd.err();return}if(!isPart(u)||u.group_id!==null){toast(tr("Only idle students can create a group. Leave your group first."),1);snd.err();return}
  $("#modal").innerHTML=`<div class="ov"><div class="card" style="max-width:340px"><b>${tr("New group")}</b><p class="mu">${tr("You become the host.")}</p><input id="gname" placeholder="${tr("Group name")}" maxlength="30" style="width:100%;margin-bottom:8px"><div class="row"><span>${tr("Max members")}</span><select id="gcap">${[1,2,3,4,5,6,7,8,9,10].map(n=>`<option ${n===5?"selected":""}>${n}</option>`).join("")}</select></div><div class="row" style="margin-top:12px"><button class="s" style="flex:1" onclick="closeM()">${tr("Cancel")}</button><button style="flex:1" onclick="makeGroup()">${tr("Create")}</button></div></div></div>`}
 // Yeni qrupu bazada yaradır
 // ---- Sinif seçimi ----

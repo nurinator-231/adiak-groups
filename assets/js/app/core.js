@@ -26,7 +26,9 @@ const permList=p=>["admin","points","groups","chats","passwords","panel"].filter
 // Sağ alt küncdəki 'Created by' kartı
 const credits=inl=>`<div class="credits${inl?" inline":""}"><small>${tr("Created by")}</small><div><b>Sübhan Camalzadə</b> <span class="chip tag">${ic("shield")} Admin</span></div><div><b>Nurəli Qasımlı</b> <span class="chip tag">${ic("shield")} Admin</span></div></div>`;
 // Tələbələrin siyahısı (müəllim və Host daxil deyil)
-const ppl=()=>Object.values(P).filter(p=>!p.is_admin&&p.role!=="teacher"&&!(p.perms||[]).includes("admin")&&(viewerTag()===undefined||p.class_tag===viewerTag())).sort((a,b)=>a.name.localeCompare(b.name));
+// Qrup iştirakçısı: sistem rolu (admin) qrupdakı tələbə rolundan ayrıdır; yalnız müəllimlər və sinifsiz Host hesabı iştirak etmir
+const isPart=p=>!!p&&p.role!=="teacher"&&(!p.is_admin||!!p.class_tag);
+const ppl=()=>Object.values(P).filter(p=>isPart(p)&&(viewerTag()===undefined||p.class_tag===viewerTag())).sort((a,b)=>a.name.localeCompare(b.name));
 // Akademik qrup (class_tag): tələbə yalnız öz akademik qrupunun komandalarını və boş tələbələrini görür; müəllim/admin hamısını görür
 // Heyət (müəllim/admin): açdığı sinfə baxır (ACLASS). Tələbə: yalnız öz sinfinə. undefined = məhdudiyyət yoxdur
 const isStaff=u=>!!u&&(u.role==="teacher"||u.is_admin||(u.perms||[]).includes("admin"));
@@ -38,7 +40,7 @@ const visG=()=>G.filter(sameClass);
 const needTag=()=>{const u=ME();return !!u&&u.role==="student"&&!isStaff(u)&&!u.class_tag};
 const mem=g=>ppl().filter(p=>p.group_id===g), idle=()=>ppl().filter(p=>p.group_id===null&&sameClass(p));
 const gname=id=>{const g=grp(id);return g?g.name:"?"}, gcol=id=>`hsl(${(id*67+200)%360} 70% 52%)`;
-const gchip=p=>p.is_admin?`<span class="chip">${tr("host")}</span>`:p.role==="teacher"?`<span class="chip">${tr("teacher")}</span>`:p.group_id===null?`<span class="chip on">${tr("idle")}</span>`:`<span class="chip" style="background:${gcol(p.group_id)}22;color:${gcol(p.group_id)}">${esc(gname(p.group_id))}</span>`;
+const gchip=p=>!isPart(p)&&p.is_admin?`<span class="chip">${tr("host")}</span>`:p.role==="teacher"?`<span class="chip">${tr("teacher")}</span>`:p.group_id===null?`<span class="chip on">${tr("idle")}</span>`:`<span class="chip" style="background:${gcol(p.group_id)}22;color:${gcol(p.group_id)}">${esc(gname(p.group_id))}</span>`;
 const dots=(k,c,col)=>Array.from({length:c},(_,i)=>`<i class="dot" style="${i<k?"background:"+col:""}"></i>`.replace('class="dot"',i<k?'class="dot f"':'class="dot"')).join("");
 const dmKey=(a,b)=>a<b?`d:${a}:${b}`:`d:${b}:${a}`;
 const RANKS=[["Newcomer",0],["Speaker",10],["Orator",25],["Maestro",50]];

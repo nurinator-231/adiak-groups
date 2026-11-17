@@ -40,7 +40,7 @@ const short=l=>String(l||"").replace("@classroom.app","");
 const gname=id=>{const g=G.find(x=>x.id===id);return g?g.name:"—"};
 const maxG=()=>+SET.max_groups||6;
 const val=i=>$("#"+i).value;
-const isStudent=p=>!p.is_admin&&p.role!=="teacher";
+const isStudent=p=>p.role!=="teacher"&&(!p.is_admin||!!p.class_tag);   // admin who is a student stays a student in groups
 // Avatar: şəkil və ya rəngli baş hərf
 const avatar=(p,lg)=>{let h=0;for(const c of p.name)h=(h*31+c.charCodeAt(0))%360;return`<div class="av${lg?" lg":""}" style="background:hsl(${h},55%,48%)">${p.avatar?`<img src="${esc(p.avatar)}" alt="">`:esc(p.name[0].toUpperCase())}${online.has(p.id)?"<i></i>":""}</div>`};
 // Ekranın altında qısa xəbər
