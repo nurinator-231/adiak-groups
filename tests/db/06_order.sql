@@ -1,4 +1,4 @@
--- Speaking order (ADIAK 1.1): own slot only, unique, 1..N; a complete order is accepted at once (no teacher/host approval),
+-- Speaking order (ADIAK 1.2): own slot only, unique, 1..N; a complete order is accepted at once (no teacher/host approval),
 -- picks stay changeable until the event is frozen, a leaver does not block the team, history and audit kept.
 select test.mk_event() as e \gset
 select test.as(test.id('s1'));

@@ -118,7 +118,7 @@ function admHtml(h){
 const admToast=m=>{const s=String(m==null?"":m),e=trErr(s);return e!==s?e:admX(s,false)};
 /* AZ | EN düyməsi (yan menyuda və giriş səhifəsində) */
 const admLang=()=>`<div class="lang-a"><button class="s${LANG==="az"?" on":""}" onclick="setLang('az')">AZ</button><button class="s${LANG==="en"?" on":""}" onclick="setLang('en')">EN</button></div>`;
-/* ADIAK 1.1: boş qrup, rəhbər müəllim, günün arxivi (təqdimatlarla) */
+/* ADIAK 1.2: boş qrup, rəhbər müəllim, günün arxivi (təqdimatlarla) */
 Object.assign(AZ,{"All current chats and the day's finished presentations (teams, files, final versions, speaking order, topics) are moved to a <b>read-only archive</b>. Students start with empty chats. Points and files stay.":"Bütün cari çatlar və günün bitmiş təqdimatları (komandalar, fayllar, final versiyalar, çıxış sırası, mövzular) <b>yalnız oxunan arxivə</b> köçürülür. Tələbələr boş çatla başlayır. Xallar və fayllar qalır.",
 "Scope":"Əhatə","Whole platform":"Bütün platforma","Class":"Sinif","Closing the same day again adds to the same archive; nothing is archived twice. Live presentations are skipped.":"Eyni gün yenidən bağlananda eyni arxivə əlavə olunur; heç nə iki dəfə arxivlənmir. Canlı təqdimatlar ötürülür.",
 "Archiving…":"Arxivlənir…","Could not open the file":"Faylı açmaq mümkün olmadı","Order":"Sıra","Topics":"Mövzular","Final":"Final","No final":"Final yoxdur","Presentations":"Təqdimatlar","Chats":"Çatlar",

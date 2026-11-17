@@ -1,7 +1,7 @@
--- ADIAK 1.1 rollback (non-destructive). Generated from the function bodies of production state 20261109101200.
+-- ADIAK 1.2 rollback (non-destructive). Generated from the function bodies of production state 20261109101200.
 -- Restores every function that the 1.1 migrations replaced, removes the 1.1 triggers and revokes the 1.1 RPCs from clients.
 -- New tables/columns and their data stay (archived presentations, topics, read receipts, presence); nothing is deleted.
--- Choices accepted meanwhile stay accepted. Run as one transaction: psql -1 -f supabase/rollback/v11_restore.sql
+-- Choices accepted meanwhile stay accepted. Run as one transaction: psql -1 -f supabase/rollback/v12_restore.sql
 drop trigger if exists tg_pres_team_settle on public.pres_event_teams;
 drop trigger if exists tg_pres_roster_settle on public.pres_roster;
 CREATE OR REPLACE FUNCTION public.pres_pick(e bigint, pos integer)

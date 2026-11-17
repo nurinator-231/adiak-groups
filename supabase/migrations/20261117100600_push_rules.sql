@@ -1,10 +1,10 @@
--- ADIAK 1.1 / item 1: push delivery rules on top of the existing pipeline (notifications/messages -> push_outbox -> push-fcm).
+-- ADIAK 1.2 / item 1: push delivery rules on top of the existing pipeline (notifications/messages -> push_outbox -> push-fcm).
 --   · The user who triggers an event never receives its notification (_notify skips auth.uid(); cron/service calls have no
 --     caller and are unchanged). Message pushes already skip the sender.
 --   · No double push: a chat.mention notification is not pushed to a device that already gets the push for that same message.
 -- Token registration/refresh (save_fcm), invalid tokens (push-fcm marks them 'invalid' and disables the device), retries and
 -- per-device de-duplication (unique outbox keys) already exist and are unchanged.
--- Rollback: supabase/rollback/v11_restore.sql (non-destructive; verified locally).
+-- Rollback: supabase/rollback/v12_restore.sql (non-destructive; verified locally).
 do $$ begin
   if to_regprocedure('public._notify(uuid[],text,jsonb,jsonb,text)') is null then raise exception 'pre-flight: notifications missing'; end if;
 end $$;

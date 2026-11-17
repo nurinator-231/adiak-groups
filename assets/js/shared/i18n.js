@@ -117,7 +117,7 @@ const AZ_ERR={
 "New password should be different from the old password.":"Yeni parol köhnə paroldan fərqli olmalıdır.","Password should be at least 6 characters.":"Parol ən azı 6 simvol olmalıdır.",
 "Password should be at least 6 characters":"Parol ən azı 6 simvol olmalıdır","Failed to fetch":"Serverlə əlaqə yoxdur. İnternetinizi yoxlayın.","Invalid login credentials":"ID və ya parol yanlışdır"
 };
-// ADIAK 1.1 server messages
+// ADIAK 1.2 server messages
 Object.assign(AZ_ERR,{"Teachers do not join groups":"Müəllimlər qruplara qoşulmur","Class not found":"Sinif tapılmadı","A group with this name already exists in this class":"Bu sinifdə bu adda qrup artıq var",
  "Choose a teacher of this class":"Bu sinfin müəllimini seçin","You cannot read this chat":"Bu çatı oxuya bilməzsiniz","Enter your current password":"Cari parolu daxil edin","At least 6 characters":"Ən azı 6 simvol",
  "The password is too long (max 72 characters)":"Parol çox uzundur (maks. 72 simvol)","The new password must be different from the current one":"Yeni parol cari paroldan fərqli olmalıdır",

@@ -1,4 +1,4 @@
--- ADIAK 1.1 item 6: read receipts and last seen.
+-- ADIAK 1.2 item 6: read receipts and last seen.
 select test.as(test.id('s1'));
 select public.send_message('g:1', 'hello team');
 select public.send_message('g:1', 'second');

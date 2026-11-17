@@ -1,11 +1,11 @@
--- ADIAK 1.1 / items 2 + 4.
+-- ADIAK 1.2 / items 2 + 4.
 -- Item 4: the system role (admin flag / 'admin' permission) and the group role are separate. Group participation depends only on
 --   profiles.role = 'student' (+ a class). An admin who is a student can create, join, be invited to and be moved into groups
 --   like any student; admin powers are unchanged. Teachers still never become group members.
 -- Item 2: admins (or staff with the 'groups' permission for that class) create EMPTY groups (admin_create_group) and may
 --   assign a supervising teacher of the class (admin_group_set_teacher). Students are added later with admin_move_member.
 --   The supervising teacher can read and write the group chat. Deleting a group keeps working through admin_delete_group.
--- Rollback: supabase/rollback/v11_restore.sql (non-destructive; verified locally).
+-- Rollback: supabase/rollback/v12_restore.sql (non-destructive; verified locally).
 do $$ begin
   if to_regprocedure('public.admin_create_group(text,text,integer)') is not null then raise exception 'pre-flight: item2/4 already applied'; end if;
   if to_regprocedure('public._only_students_in_groups()') is null then raise exception 'pre-flight: baseline missing'; end if;

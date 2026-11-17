@@ -281,7 +281,7 @@ function pxLiveBanner(ev) {
   return `<div class="pxlive"><span class="livedot"></span><div style="flex:1;min-width:0"><b>${tr("Live now")}:</b> ${cur ? esc(cur.group_name) + " " + tr("presenting") : ""}${nx ? ` · ${tr("Up next")}: ${esc(nx.group_name)}` : ""}</div>
    <b class="lvt" data-lv="${ev.id}">${pxDur(l.duration_s * 1000 - pxLiveElapsed(l))}</b>${window.openLive ? `<button class="ok" onclick="openLive(${ev.id})">${ic("expand")} ${tr("Open live stage")}</button>` : ""}</div>`;
 }
-/* ---------- topics (ADIAK 1.1): the teacher's topic list, each student picks one ---------- */
+/* ---------- topics (ADIAK 1.2): the teacher's topic list, each student picks one ---------- */
 function pxTopicsCard(ev, g) {
   const tps = PX.tp.filter(t => t.event_id === ev.id && !t.removed_at).sort((a, b) => a.position - b.position);
   if (!tps.length) return "";
@@ -308,7 +308,7 @@ function pxOrderSec(ev, g) {
   const t = pxTeam(ev.id, g), act = pxActive(ev.id, g), n = act.length, sp = PX.sp.filter(s => s.event_id === ev.id && s.group_id === g);
   const frozen = PX.spf.filter(s => s.event_id === ev.id && s.group_id === g).sort((a, b) => a.position - b.position);
   if (frozen.length) return `<div class="card"><b>${ic("lock")} ${tr("Speaking order")}</b><ol class="pxorder">${frozen.map(f => `<li class="${f.user_id === uid ? "me" : ""}"><span class="ordn">${f.placed ? f.position : "–"}</span><b>${esc(f.user_name)}</b>${f.placed ? "" : pxChip(tr("not chosen"), "warn")}</li>`).join("")}</ol></div>`;
-  const mine = sp.find(s => s.user_id === uid), host = (grp(g) || {}).host_id === uid, chosen = sp.filter(s => !s.withdrawn).length, member = pxMember(ev.id), open = member;   // ADIAK 1.1: picks stay changeable until the event is frozen; no submit/approve step
+  const mine = sp.find(s => s.user_id === uid), host = (grp(g) || {}).host_id === uid, chosen = sp.filter(s => !s.withdrawn).length, member = pxMember(ev.id), open = member;   // ADIAK 1.2: picks stay changeable until the event is frozen; no submit/approve step
   const slots = Array.from({ length: Math.max(n, sp.length) }, (_, i) => { const s = sp.find(x => x.position === i + 1), me = s && s.user_id === uid;
     return `<button class="pxslot${s ? " taken" : ""}${me ? " me" : ""}${s && s.withdrawn ? " gone" : ""}" ${open && member && (!s || me) ? `onclick="${me ? `pxCall('pres_unpick',{e:${ev.id}})` : `pxCall('pres_pick',{e:${ev.id},pos:${i + 1}})`}"` : "disabled"} aria-pressed="${!!me}">
       <span class="ordn">${i + 1}</span><span class="pxsn">${s ? esc(pxPersonName(s.user_id)) + (s.withdrawn ? " · " + tr("withdrawn") : "") : tr("Free")}</span>${me ? `<small>${tr("You")}</small>` : ""}</button>`; }).join("");
@@ -357,7 +357,7 @@ function pxFiles(ev, g) {
   const files = PX.fl.filter(f => f.event_id === ev.id && f.group_id === g), subs = PX.sub.filter(s => s.event_id === ev.id && s.group_id === g);
   const act = subs.find(s => s.state === "submitted" || s.state === "approved"), last = subs[0], member = pxMember(ev.id);
   const fname = id => { const f = files.find(x => x.id === id); return f ? f.name : "?"; };
-  // ADIAK 1.1: the chosen final takes effect at once; the team may choose another file until the presentation is frozen
+  // ADIAK 1.2: the chosen final takes effect at once; the team may choose another file until the presentation is frozen
   const fin = act ? `<div class="pxfinal approved"><div class="pxfl">${ic("check")}<div style="min-width:0"><small>${tr("FINAL PRESENTATION")} · ${tr("Version {v}", { v: act.version })}</small>
       <b>${esc(fname(act.file_id))}</b><span class="mu">${tr("chosen by {nm}", { nm: esc(pxPersonName(act.submitted_by)) })} · ${pxDate(act.submitted_at)}</span>
       ${member ? `<small class="mu">${tr("Your team can choose another file until the presentation starts.")}</small>` : ""}</div></div><button class="s" onclick="pxOpenFile(${act.file_id})">${ic("eye")} ${tr("Open")}</button></div>`
@@ -439,7 +439,7 @@ function xHomeCards() { return XHOME.map(f => { try { return f(); } catch (e) { 
 // boot also after a cached start or a re-login (the "first ready" hook does not fire then); once per signed-in user
 setInterval(() => { if (sb && uid && typeof ME === "function" && ME() && PX.tried !== uid && !PX.booting) pxBoot(); if (!uid && PX.on) { PX.on = false; PX.tried = null; PX.notes = []; PX.acc = null; } }, 700);
 
-/* ---------- ADIAK 1.1 translations (pres, studio, chat, settings) ---------- */
+/* ---------- ADIAK 1.2 translations (pres, studio, chat, settings) ---------- */
 Object.assign(AZ, {
   "Accepted": "Qəbul edildi", "Order complete": "Sıra tamamlandı", "Final chosen": "Final seçildi",
   "The order is saved. You can still change your position until the presentation starts.": "Sıra yadda saxlanıldı. Təqdimat başlayana qədər yerinizi dəyişə bilərsiniz.",

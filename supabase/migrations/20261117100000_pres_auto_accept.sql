@@ -1,4 +1,4 @@
--- ADIAK 1.1 / item 3: students' choices take effect without a teacher's approval.
+-- ADIAK 1.2 / item 3: students' choices take effect without a teacher's approval.
 --   Speaking order: every pick/unpick settles the team's order. When each active member holds a different position 1..n the
 --   order is 'approved' at once (no 'submitted' waiting state); otherwise it is 'open'. When a member leaves, their pick is
 --   dropped and, if a remaining pick no longer fits the smaller team, the picks are renumbered in their order (a leaver no
@@ -7,7 +7,7 @@
 --   until the event is frozen (the previous one becomes 'superseded'). Staff keep their powers (return, reopen, approve).
 --   Existing data: pending orders/finals of events that are not frozen are settled/accepted once. Nothing is deleted except
 --   withdrawn speaker picks (kept in pres_speaker_log and pres_audit).
--- Rollback: supabase/rollback/v11_restore.sql (non-destructive; verified locally).
+-- Rollback: supabase/rollback/v12_restore.sql (non-destructive; verified locally).
 do $$ begin
   if to_regprocedure('public.pres_submit_final(bigint,bigint)') is null then raise exception 'pre-flight: M3 (pres_rpcs) must be applied first'; end if;
   if to_regprocedure('public._pres_order_settle(bigint,bigint)') is not null then raise exception 'pre-flight: item3 already applied'; end if;

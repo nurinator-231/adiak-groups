@@ -1,4 +1,4 @@
--- ADIAK 1.1 / item 8: "Günü bitir" archives the day's presentations together with the chats, atomically and without duplicates.
+-- ADIAK 1.2 / item 8: "Günü bitir" archives the day's presentations together with the chats, atomically and without duplicates.
 -- close_day(lbl, dissolve, cls):
 --   · cls null  → admin only, whole platform (same scope as before for chats).
 --     cls given → admin or a teacher of that class: the class chat, its group chats, DMs between its members, its presentations.
@@ -13,7 +13,7 @@
 --   · Live presentations are skipped (reported back), never cut off.
 --   · Runs as one statement inside one transaction: any error rolls back everything (no partial archive).
 -- admin_close_day(lbl, dissolve) keeps its signature and calls close_day(..., null).
--- Rollback: supabase/rollback/v11_restore.sql (non-destructive; verified locally).
+-- Rollback: supabase/rollback/v12_restore.sql (non-destructive; verified locally).
 do $$ begin
   if to_regprocedure('public.close_day(text,boolean,text)') is not null then raise exception 'pre-flight: item8 already applied'; end if;
   if to_regclass('public.pres_topics') is null then raise exception 'pre-flight: item9 (pres_topics) must be applied first'; end if;

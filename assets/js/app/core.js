@@ -251,7 +251,7 @@ function subscribe(){if(chan)return;
    if(s==="CHANNEL_ERROR"||s==="TIMED_OUT"||s==="CLOSED"){chan=null;clearTimeout(tmChan);tmChan=setTimeout(()=>{if(uid&&!chan)subscribe()},3000)}})}
 addEventListener("online",()=>{if(uid&&!chan)subscribe()});
 
-/* ================= ADIAK 1.1: OXUNMA STATUSU (GÖRÜLDÜ) VƏ ONLAYN / SON AKTİVLİK =================
+/* ================= ADIAK 1.2: OXUNMA STATUSU (GÖRÜLDÜ) VƏ ONLAYN / SON AKTİVLİK =================
    Görüldü: hər oxucu üçün serverdə kanal başına son oxunan mesaj id-si (message_reads, real vaxtda). "all" kanalında yoxdur.
    Onlayn: Realtime Presence (bağlantı kəsiləndə/tətbiq bağlananda server özü çıxarır) + fəaliyyət: tab gizli 60 s və ya 5 dəq
    hərəkətsizlikdən sonra untrack; son aktivlik user_presence-də saxlanılır (presence_ping/presence_bye). */

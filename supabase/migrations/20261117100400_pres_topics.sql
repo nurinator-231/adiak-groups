@@ -1,10 +1,10 @@
--- ADIAK 1.1 / item 9: topic lists for presentations.
+-- ADIAK 1.2 / item 9: topic lists for presentations.
 -- The teacher creates a presentation with a title and uploads a TXT/DOCX topic list. The app reads the file in the browser and
 -- sends the parsed lines; the server validates them again (trim, numbering/bullets removed, 1..200 chars, duplicates ignored,
 -- max 300 per presentation). Students of participating teams pick one topic each; topic_max limits how many students may
 -- share a topic (1 = exclusive, 0 = unlimited). Staff see who picked what, edit/remove topics, change the limit and release picks.
 -- Picks are locked once the event is frozen (live/done). Additive only.
--- Rollback: supabase/rollback/v11_restore.sql (non-destructive; verified locally).
+-- Rollback: supabase/rollback/v12_restore.sql (non-destructive; verified locally).
 do $$ begin
   if to_regclass('public.pres_topics') is not null then raise exception 'pre-flight: item9 already applied'; end if;
   if to_regclass('public.pres_events') is null then raise exception 'pre-flight: M2 missing'; end if;

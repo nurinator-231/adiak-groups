@@ -1,9 +1,9 @@
-// ADIAK 1.1 features in the browser (mocked Supabase): admin-as-student in groups, no approval step, topic picker,
+// ADIAK 1.2 features in the browser (mocked Supabase): admin-as-student in groups, no approval step, topic picker,
 // teacher topic upload, password change with the current password, read receipts, presence, admin empty group + day archive.
-// Usage: node tests/v11-ui.mjs [label]
+// Usage: node tests/v12-ui.mjs [label]
 import { harness, assert, settle } from "./lib/harness.mjs";
 import { IDS, profiles } from "./lib/fixtures.mjs";
-const H = await harness(process.argv[2] || "v11-ui");
+const H = await harness(process.argv[2] || "v12-ui");
 const calls = (env, fn) => (env.log.calls || []).filter(x => x.fn === fn);
 const ready = p => p.waitForFunction(() => window.PX && PX.on && PX.loaded, null, { timeout: 8000 });
 const goPres = async p => { await ready(p); await p.evaluate(() => goTab("pres")); await settle(p); };

@@ -1,4 +1,4 @@
--- ADIAK 1.1 item 7: the current password is required and checked on the server.
+-- ADIAK 1.2 item 7: the current password is required and checked on the server.
 update auth.users set encrypted_password = extensions.crypt('old-pass', extensions.gen_salt('bf')) where id = test.id('s1');
 select test.as(test.id('s1'));
 select test.eq(public.change_my_password('wrong-pass', 'new-pass-1'), 'wrong', 'wrong current password: nothing changed');

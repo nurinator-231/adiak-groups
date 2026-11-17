@@ -1,4 +1,4 @@
--- ADIAK 1.1 item 9: topic lists uploaded by the teacher, picked by students.
+-- ADIAK 1.2 item 9: topic lists uploaded by the teacher, picked by students.
 select test.mk_event() as e \gset
 select test.as(test.id('s1'));
 select test.throws(format($q$select public.pres_topics_add(%s, array['x'])$q$, :e), 'permission', 'student cannot add topics');

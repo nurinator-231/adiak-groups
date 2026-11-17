@@ -1,4 +1,4 @@
--- ADIAK 1.1 item 1: push rules (no self-notification, no double push for mentions, token handling unchanged).
+-- ADIAK 1.2 item 1: push rules (no self-notification, no double push for mentions, token handling unchanged).
 select test.as(test.id('s1'));
 select public.save_fcm('tok-s1-aaaaaaaaaaaaaaaaaaaaaaaa', 'az');
 select test.as(test.id('s2'));

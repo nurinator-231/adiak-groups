@@ -115,7 +115,7 @@ function stPres(tag) {
 }
 function stEventForm(tag, e) {
   const dr = (!e && ST.draft) || {}, nt = !e && ST.newTopics, v = (k, x) => esc(dr[k] != null ? dr[k] : x);
-  // ADIAK 1.1: a new presentation = (1) title, (2) the teacher's topic list as a TXT/DOCX file (replaces the description)
+  // ADIAK 1.2: a new presentation = (1) title, (2) the teacher's topic list as a TXT/DOCX file (replaces the description)
   const topics = e ? (e.descr ? `<label>${tr("Note")}<textarea id="std" maxlength="1000" rows="2">${esc(e.descr)}</textarea></label>` : "")
     : `<div class="stfile"><b>${tr("Step 2 · Topic list")}</b><p class="mu">${tr("Upload your list of topics as TXT or Word (DOCX), one topic per line or paragraph. Students choose from it.")}</p>
       <label class="btn s upl">${ic("upload")} ${nt ? tr("Choose another file") : tr("Upload topic list")}<input type="file" hidden accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onchange="stTopicsFile(this,'new')"></label>
@@ -269,7 +269,7 @@ function stTeamFiles(e, g) {
 }
 const stOrderNames = (e, g) => { const sp = PX.sp.filter(s => s.event_id === e && s.group_id === g && !s.withdrawn).sort((a, b) => a.position - b.position);
   return sp.length ? `<br><small class="mu">${sp.map(s => s.position + ". " + esc(pxPersonName(s.user_id))).join(" · ")}</small>` : ""; };
-// ADIAK 1.1: "Günü bitir" for the teacher's class: chats + the day's finished presentations go to one archive (atomic, no duplicates)
+// ADIAK 1.2: "Günü bitir" for the teacher's class: chats + the day's finished presentations go to one archive (atomic, no duplicates)
 function stEndDay(tag) {
   ask(tr("End the day for class {c}? The class chats and today's finished presentations (files, finals, order, topics) are moved to the archive.", { c: esc(tag) }), async () => {
     const r = await pxCall("close_day", { lbl: null, dissolve: false, cls: tag });

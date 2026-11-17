@@ -1,4 +1,4 @@
--- ADIAK 1.1 items 2 + 4: empty groups created by staff, supervising teacher, admin who is a student acts as a student in groups.
+-- ADIAK 1.2 items 2 + 4: empty groups created by staff, supervising teacher, admin who is a student acts as a student in groups.
 -- (4) an admin (perms 'admin', role student) is a normal group member
 update public.profiles set perms = '{admin}' where id = test.id('s6');
 select test.as(test.id('s6'));

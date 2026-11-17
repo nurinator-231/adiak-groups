@@ -1,4 +1,4 @@
--- ADIAK 1.1 item 8: "Günü bitir" archives the day's presentations with the chats, atomically and without duplicates.
+-- ADIAK 1.2 item 8: "Günü bitir" archives the day's presentations with the chats, atomically and without duplicates.
 select test.mk_event() as e \gset
 select test.mk_event() as e2 \gset
 select test.mk_event() as e3 \gset

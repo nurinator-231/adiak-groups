@@ -33,3 +33,10 @@ node tests/tokens-check.mjs      # tokens.css: light/dark/auto parity, WCAG cont
 - no request reaching a non-mocked host
 
 **Not covered** (needs a real device or a real account): Android Back, safe-area bar colors, the on-screen keyboard, the single-device kick and push.
+
+## ADIAK 1.2
+```bash
+node tests/v12-ui.mjs        # admin-as-student, no approval step, topics (student + teacher upload), password, receipts, presence, admin groups + archive, phone 360
+node tests/topics-parse.mjs  # TXT/DOCX topic parser with real files (BOM, UTF-16, CRLF, entities, broken/empty/large files)
+LOCAL_PG_URL=postgresql://postgres@127.0.0.1:54329 tests/db/run.sh   # includes 26-31_*.sql for the 1.2 migrations
+```

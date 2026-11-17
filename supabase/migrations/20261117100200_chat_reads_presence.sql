@@ -1,11 +1,11 @@
--- ADIAK 1.1 / item 6: chat read receipts ("Görüldü") and last-seen presence.
+-- ADIAK 1.2 / item 6: chat read receipts ("Görüldü") and last-seen presence.
 -- message_reads: one row per (channel, reader) with the highest message id the reader has seen. Written only through
 --   mark_read() for channels the caller can access; readable by everyone who can access the channel; in the realtime
 --   publication so receipts update live. The class-wide 'all' channel has no receipts (too many readers).
 -- user_presence: last time a signed-in client was connected / active. Live online state comes from Realtime Presence
 --   (dropped automatically when the socket closes or heartbeats stop); this table gives "last seen" for offline people.
 --   presence_ping() is throttled server-side (one write per 30 s per user). Not in the realtime publication.
--- Additive only. Rollback: supabase/rollback/v11_restore.sql (non-destructive; verified locally).
+-- Additive only. Rollback: supabase/rollback/v12_restore.sql (non-destructive; verified locally).
 do $$ begin
   if to_regclass('public.message_reads') is not null then raise exception 'pre-flight: item6 already applied'; end if;
 end $$;

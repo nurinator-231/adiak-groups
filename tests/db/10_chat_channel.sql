@@ -37,7 +37,7 @@ select test.eq((select count(*)::int from public.messages where channel = 'p:' |
 select test.lives($q$select public.send_message('g:1', 'team chat')$q$, 'existing team chat unchanged');
 select test.throws($q$select public.send_message('g:2', 'x')$q$, 'invalid chat', 'existing other-team chat still blocked');
 select test.lives(format($q$select public.send_message('d:%s:%s', 'dm')$q$, least(test.id('s2'), test.id('s1')), greatest(test.id('s2'), test.id('s1'))), 'DMs unchanged');
--- close the day (ADIAK 1.1): the finished event is archived together with its team chat; open events keep theirs
+-- close the day (ADIAK 1.2): the finished event is archived together with its team chat; open events keep theirs
 select test.as(test.id('admin'));
 select test.lives($q$select public.admin_close_day('test', false)$q$, 'close the day works with event chats present');
 select test.as_db();

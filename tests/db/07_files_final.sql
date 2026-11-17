@@ -41,7 +41,7 @@ select test.eq((select md5(string_agg(name, ',' order by name)) from storage.obj
 select test.as(test.id('s1'));
 select test.as(test.id('tpres'));
 select test.eq((select count(*)::int from public.pres_files where event_id = :e), 2, 'class staff sees all team files');
--- final submission (ADIAK 1.1): the chosen final is accepted at once, the team may replace it, staff may still return it
+-- final submission (ADIAK 1.2): the chosen final is accepted at once, the team may replace it, staff may still return it
 select test.as(test.id('s3'));
 select test.lives(format('select public.pres_submit_final(%s, null)', :f1), 'member chooses v1 as final');
 select test.throws(format('select public.pres_submit_final(%s, null)', :f2), 'changed meanwhile', 'stale client (concurrent submit) rejected');

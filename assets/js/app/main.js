@@ -13,7 +13,7 @@ function removeMember(id){ask(tr("Remove {name} from the group?",{name:esc(nameO
 // Tələbəni seçilmiş qrupa keçirir (groups yetkisi lazımdır)
 async function moveTo(id){const g=+$("#mvg").value;if(await rpc("admin_move_member",{u:id,g}))toast(nameOf(id)+" → "+gname(g))}
 // Parolu dəyişir; adminlər üçün şifrələnmiş surət saxlanır (adminlərin parolu saxlanmır)
-// ADIAK 1.1 (feedback #13): cari parol tələb olunur və serverdə yoxlanılır (change_my_password); səhvdirsə heç nə dəyişmir
+// ADIAK 1.2 (feedback #13): cari parol tələb olunur və serverdə yoxlanılır (change_my_password); səhvdirsə heç nə dəyişmir
 async function changePw(){const c=$("#cp0").value,a=$("#cp1").value,b=$("#cp2"),bt=$("#cpbtn");
  const bad=m=>{toast(tr(m),1);snd.err()};
  if(!c)return bad("Enter your current password");if(a.length<6)return bad("At least 6 characters");if(a!==b.value)return bad("Passwords do not match");if(a===c)return bad("The new password must be different from the current one");
