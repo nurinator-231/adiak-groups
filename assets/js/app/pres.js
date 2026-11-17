@@ -224,7 +224,7 @@ function pxReadiness(e, g) {
   return { pct: Math.round(parts.reduce((a, p) => a + p[1], 0) / parts.length * 100), parts, done, total: tk.length };
 }
 function pxMyEvents() {
-  return PX.ev.filter(e => e.status !== "draft" || pxIsStaff(e.class_tag)).sort((a, b) => {
+  return PX.ev.filter(e => !e.archived_at && (e.status !== "draft" || pxIsStaff(e.class_tag))).sort((a, b) => {
     const ma = pxMyGroup(a.id) ? 0 : 1, mb = pxMyGroup(b.id) ? 0 : 1; if (ma !== mb) return ma - mb;
     const sa = a.status === "done" ? 1 : 0, sb2 = b.status === "done" ? 1 : 0; if (sa !== sb2) return sa - sb2; return b.id - a.id; });
 }
@@ -438,3 +438,44 @@ const XHOME = [pxHomeCard];
 function xHomeCards() { return XHOME.map(f => { try { return f(); } catch (e) { return ""; } }).join(""); }
 // boot also after a cached start or a re-login (the "first ready" hook does not fire then); once per signed-in user
 setInterval(() => { if (sb && uid && typeof ME === "function" && ME() && PX.tried !== uid && !PX.booting) pxBoot(); if (!uid && PX.on) { PX.on = false; PX.tried = null; PX.notes = []; PX.acc = null; } }, 700);
+
+/* ---------- ADIAK 1.1 translations (pres, studio, chat, settings) ---------- */
+Object.assign(AZ, {
+  "Accepted": "Qəbul edildi", "Order complete": "Sıra tamamlandı", "Final chosen": "Final seçildi",
+  "The order is saved. You can still change your position until the presentation starts.": "Sıra yadda saxlanıldı. Təqdimat başlayana qədər yerinizi dəyişə bilərsiniz.",
+  "Everyone picks a different position. The order is saved automatically when it is complete, no approval needed.": "Hər kəs fərqli yer seçir. Sıra tamamlananda avtomatik yadda saxlanılır, təsdiq lazım deyil.",
+  "Use this file as your team's final presentation?": "Bu fayl komandanızın final təqdimatı olsun?", "Final selected ✓": "Final seçildi ✓", "chosen by {nm}": "{nm} seçib",
+  "Your team can choose another file until the presentation starts.": "Təqdimat başlayana qədər komandanız başqa fayl seçə bilər.",
+  "Upload a file below and press “Choose as final”. No approval needed.": "Aşağıda fayl yükləyin və “Final kimi seç” düyməsini basın. Təsdiq lazım deyil.",
+  "Choose as final": "Final kimi seç", "Replaced": "Əvəz edildi",
+  "My uploads in other teams": "Digər komandalardakı yükləmələrim", "You uploaded these while you were in another team. They stay with that team.": "Bunları başqa komandada olarkən yükləmisiniz. Onlar həmin komandada qalır.",
+  "Speaking order saved": "Çıxış sırası qəbul edildi", "{team} chose final version {v}": "{team} final versiya {v} seçdi", "Final presentation selected (v{v})": "Final təqdimat seçildi (v{v})",
+  "Topic list published: {title}": "Mövzu siyahısı: {title}", "Choose your presentation topic.": "Təqdimat mövzunuzu seçin.", "Your topic was released": "Mövzu seçiminiz ləğv edildi",
+  "You supervise {group}": "{group} qrupuna rəhbərlik edirsiniz", "You can follow the group chat.": "Qrup çatını izləyə bilərsiniz.",
+  "Any number of students per topic": "Bir mövzunu istənilən sayda tələbə seçə bilər", "One student per topic": "Hər mövzu bir tələbəyə", "Up to {n} students per topic": "Hər mövzuya ən çox {n} tələbə",
+  "Presentation topics": "Təqdimat mövzuları", "Your topic is saved. You can change it until the presentation starts.": "Mövzunuz yadda saxlanıldı. Təqdimat başlayana qədər dəyişə bilərsiniz.",
+  "Choose your topic. It is saved at once, no approval needed.": "Mövzunuzu seçin. Dərhal yadda saxlanılır, təsdiq lazım deyil.", "Topics chosen by the students": "Tələbələrin seçdiyi mövzular",
+  "Taken": "Tutulub", "Topic saved ✓": "Mövzu yadda saxlanıldı ✓", "Choose": "Seç",
+  "Students' speaking order and final file take effect without your approval. You can still return a final for corrections.": "Tələbələrin çıxış sırası və final faylı sizin təsdiqiniz olmadan qüvvəyə minir. Finalı düzəliş üçün yenə də geri qaytara bilərsiniz.",
+  "Files": "Fayllar", "Note": "Qeyd", "Step 1 · Title": "1-ci addım · Başlıq", "Step 2 · Topic list": "2-ci addım · Mövzu siyahısı",
+  "Upload your list of topics as TXT or Word (DOCX), one topic per line or paragraph. Students choose from it.": "Mövzu siyahınızı TXT və ya Word (DOCX) faylı kimi yükləyin: hər sətirdə və ya abzasda bir mövzu. Tələbələr bu siyahıdan seçir.",
+  "Choose another file": "Başqa fayl seç", "Upload topic list": "Mövzu siyahısını yüklə", "Reading the file…": "Fayl oxunur…", "{n} topics found": "{n} mövzu tapıldı", "Remove": "Sil",
+  "Students per topic (0 = unlimited)": "Bir mövzuya tələbə sayı (0 = limitsiz)", "Saving…": "Yadda saxlanılır…",
+  "No topic list uploaded. Create the presentation without topics? You can add them later.": "Mövzu siyahısı yüklənməyib. Təqdimat mövzusuz yaradılsın? Mövzuları sonra əlavə edə bilərsiniz.",
+  "Presentation created with {n} topics ✓": "Təqdimat {n} mövzu ilə yaradıldı ✓", "{n} topics read from the file ✓": "Fayldan {n} mövzu oxundu ✓", "Could not read the file": "Faylı oxumaq mümkün olmadı",
+  "A presentation can have at most 300 topics": "Bir təqdimatda ən çox 300 mövzu ola bilər", "The file has no topics": "Faylda mövzu tapılmadı", "This is not a valid DOCX file": "Bu, düzgün DOCX faylı deyil",
+  "This device cannot read DOCX files. Save the list as TXT and try again.": "Bu cihaz DOCX faylını oxuya bilmir. Siyahını TXT kimi saxlayıb yenidən cəhd edin.",
+  "Old Word (.doc) files are not supported. Save as DOCX or TXT.": "Köhnə Word (.doc) faylları dəstəklənmir. DOCX və ya TXT kimi saxlayın.",
+  "Only TXT and DOCX files are supported": "Yalnız TXT və DOCX faylları dəstəklənir", "The file is empty": "Fayl boşdur", "The file is too large (max 2 MB)": "Fayl çox böyükdür (maks. 2 MB)",
+  "Topics": "Mövzular", "{a} of {b} students chose": "{b} tələbədən {a} nəfər seçib", "Release": "Seçimi ləğv et", "No topics yet. Upload a TXT or DOCX list.": "Hələ mövzu yoxdur. TXT və ya DOCX siyahısı yükləyin.",
+  "Not chosen yet": "Hələ seçməyənlər", "Add topics from a file": "Fayldan mövzu əlavə et", "Topic": "Mövzu",
+  "Remove the topic “{t}”? Students who chose it must choose again.": "“{t}” mövzusu silinsin? Onu seçən tələbələr yenidən seçməlidir.",
+  "Release this student's topic choice?": "Bu tələbənin mövzu seçimi ləğv edilsin?", "Removed": "Silindi", "Released": "Ləğv edildi",
+  "End the day": "Günü bitir", "Archived": "Arxivlənmiş",
+  "End the day for class {c}? The class chats and today's finished presentations (files, finals, order, topics) are moved to the archive.": "{c} sinfi üçün gün bitirilsin? Sinif çatları və bu günün bitmiş təqdimatları (fayllar, finallar, sıra, mövzular) arxivə köçürülür.",
+  "Day closed: {m} messages and {p} presentations archived.": "Gün bağlandı: {m} mesaj və {p} təqdimat arxivləşdirildi.", "{n} live presentation(s) skipped.": "{n} canlı təqdimat ötürüldü.",
+  "Sending…": "Göndərilir…", "Seen": "Görüldü", "Seen by {n}": "Görüldü · {n}", "Sent": "Göndərildi", "Seen by": "Görənlər", "just now": "indicə", "{n} min ago": "{n} dəq əvvəl",
+  "today at {t}": "bu gün {t}", "yesterday at {t}": "dünən {t}", "last seen {t}": "son aktivlik: {t}", "offline": "oflayn", "{n} of {m} online": "{m} nəfərdən {n} onlayn",
+  "Current password": "Cari parol", "Repeat new password": "Yeni parolu təkrarlayın", "Enter your current password": "Cari parolu daxil edin",
+  "The new password must be different from the current one": "Yeni parol cari paroldan fərqli olmalıdır", "Current password is incorrect": "Cari parol düzgün deyil"
+});

@@ -107,10 +107,11 @@ function stOverview(tag) {
 /* ---------- presentations (teacher) ---------- */
 function stPres(tag) {
   if (ST.ev === "new") return stEventForm(tag, null);
-  const list = PX.ev.filter(e => e.class_tag === tag);
+  const all = PX.ev.filter(e => e.class_tag === tag), list = all.filter(e => !e.archived_at), arch = all.filter(e => e.archived_at);
   if (ST.ev && pxEv(ST.ev)) return stEvent(pxEv(ST.ev));
-  return `<div class="card"><div class="row sp"><b>${ic("present")} ${tr("Presentations")}</b><button class="ok" onclick="ST.ev='new';render()">${ic("plus")} ${tr("New presentation")}</button></div>
-    ${list.map(e => `<div class="li" onclick="ST.ev=${e.id};render()">${ic("present")}<div class="g"><b>${esc(e.title)}</b><br><small class="mu">${pxStatus(e.status)}${e.starts_at ? " · " + pxDate(e.starts_at) : ""} · ${pxTeams(e.id).length} ${tr("Teams")}</small></div><span>›</span></div>`).join("") || `<p class="mu">${tr("No presentations yet")}</p>`}</div>`;
+  return `<div class="card"><div class="row sp"><b>${ic("present")} ${tr("Presentations")}</b><div class="row wrap"><button class="s" onclick="stEndDay('${esc(tag)}')">${ic("archive")} ${tr("End the day")}</button><button class="ok" onclick="ST.ev='new';ST.draft=null;ST.newTopics=null;ST.topicsErr=null;render()">${ic("plus")} ${tr("New presentation")}</button></div></div>
+    ${list.map(e => `<div class="li" onclick="ST.ev=${e.id};render()">${ic("present")}<div class="g"><b>${esc(e.title)}</b><br><small class="mu">${pxStatus(e.status)}${e.starts_at ? " · " + pxDate(e.starts_at) : ""} · ${pxTeams(e.id).length} ${tr("Teams")}</small></div><span>›</span></div>`).join("") || `<p class="mu">${tr("No presentations yet")}</p>`}</div>`
+    + (arch.length ? `<details class="card"><summary><b>${ic("archive")} ${tr("Archived")}</b> <small class="mu">${arch.length}</small></summary>${arch.map(e => `<div class="li" onclick="ST.ev=${e.id};render()">${ic("archive")}<div class="g"><b>${esc(e.title)}</b><br><small class="mu">${pxDate(e.archived_at)}</small></div><span>›</span></div>`).join("")}</details>` : "");
 }
 function stEventForm(tag, e) {
   const dr = (!e && ST.draft) || {}, nt = !e && ST.newTopics, v = (k, x) => esc(dr[k] != null ? dr[k] : x);
@@ -148,6 +149,7 @@ async function stSaveEvent(id, tag) {
 async function stTopicsFile(inp, mode) {
   const f = inp.files[0]; inp.value = ""; if (!f) return;
   if (mode === "new") stKeepDraft();
+  try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}   // render() waits while a text field has focus
   ST.topicsErr = null; ST.topicsBusy = true; render();
   try {
     const items = await stReadTopics(f);
@@ -267,6 +269,13 @@ function stTeamFiles(e, g) {
 }
 const stOrderNames = (e, g) => { const sp = PX.sp.filter(s => s.event_id === e && s.group_id === g && !s.withdrawn).sort((a, b) => a.position - b.position);
   return sp.length ? `<br><small class="mu">${sp.map(s => s.position + ". " + esc(pxPersonName(s.user_id))).join(" · ")}</small>` : ""; };
+// ADIAK 1.1: "Günü bitir" for the teacher's class: chats + the day's finished presentations go to one archive (atomic, no duplicates)
+function stEndDay(tag) {
+  ask(tr("End the day for class {c}? The class chats and today's finished presentations (files, finals, order, topics) are moved to the archive.", { c: esc(tag) }), async () => {
+    const r = await pxCall("close_day", { lbl: null, dissolve: false, cls: tag });
+    if (r && typeof r === "object") toast(tr("Day closed: {m} messages and {p} presentations archived.", { m: r.messages || 0, p: r.presentations || 0 }) + (r.skipped_live ? " " + tr("{n} live presentation(s) skipped.", { n: r.skipped_live }) : ""));
+  }, tr("End the day"));
+}
 async function stTeamToggle(e, g, on) {
   const d = pxDraw(e); let reason = null;
   if (d) { reason = prompt(tr("Why are you changing the teams after the draw?"), ""); if (!reason) { render(); return; } }

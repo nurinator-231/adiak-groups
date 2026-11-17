@@ -13,10 +13,16 @@ function removeMember(id){ask(tr("Remove {name} from the group?",{name:esc(nameO
 // Tələbəni seçilmiş qrupa keçirir (groups yetkisi lazımdır)
 async function moveTo(id){const g=+$("#mvg").value;if(await rpc("admin_move_member",{u:id,g}))toast(nameOf(id)+" → "+gname(g))}
 // Parolu dəyişir; adminlər üçün şifrələnmiş surət saxlanır (adminlərin parolu saxlanmır)
-async function changePw(){const a=$("#cp1").value;if(a.length<6){toast(tr("At least 6 characters"),1);snd.err();return}if(a!==$("#cp2").value){toast(tr("Passwords do not match"),1);snd.err();return}
- const {error}=await sb.auth.updateUser({password:a});if(error){toast(trErr(error.message),1);snd.err();return}
- try{await sb.rpc("set_my_password_copy",{pw:a})}catch(e){}
- $("#cp1").value="";$("#cp2").value="";snd.ok();toast(tr("Password changed ✓"))}
+// ADIAK 1.1 (feedback #13): cari parol tələb olunur və serverdə yoxlanılır (change_my_password); səhvdirsə heç nə dəyişmir
+async function changePw(){const c=$("#cp0").value,a=$("#cp1").value,b=$("#cp2"),bt=$("#cpbtn");
+ const bad=m=>{toast(tr(m),1);snd.err()};
+ if(!c)return bad("Enter your current password");if(a.length<6)return bad("At least 6 characters");if(a!==b.value)return bad("Passwords do not match");if(a===c)return bad("The new password must be different from the current one");
+ if(bt){bt.disabled=true;bt.textContent=tr("Saving…")}
+ try{const r=await sb.rpc("change_my_password",{cur:c,pw:a});
+  if(r.error)return bad(trErr(r.error.message));
+  if(r.data!=="ok"){$("#cp0").value="";$("#cp0").focus();return bad("Current password is incorrect")}
+  $("#cp0").value="";$("#cp1").value="";b.value="";snd.ok();toast(tr("Password changed ✓"))}
+ finally{const x=$("#cpbtn");if(x){x.disabled=false;x.textContent=tr("Change password")}}}
 // Çıxışdan əvvəl təsdiq soruşur
 function confirmLogout(){ask(tr("Are you sure you want to log out?"),()=>logout())}
 // Kick səsverməsi başlatır (yalnız qrup hostu)

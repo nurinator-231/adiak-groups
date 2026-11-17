@@ -118,3 +118,13 @@ function admHtml(h){
 const admToast=m=>{const s=String(m==null?"":m),e=trErr(s);return e!==s?e:admX(s,false)};
 /* AZ | EN düyməsi (yan menyuda və giriş səhifəsində) */
 const admLang=()=>`<div class="lang-a"><button class="s${LANG==="az"?" on":""}" onclick="setLang('az')">AZ</button><button class="s${LANG==="en"?" on":""}" onclick="setLang('en')">EN</button></div>`;
+/* ADIAK 1.1: boş qrup, rəhbər müəllim, günün arxivi (təqdimatlarla) */
+Object.assign(AZ,{"All current chats and the day's finished presentations (teams, files, final versions, speaking order, topics) are moved to a <b>read-only archive</b>. Students start with empty chats. Points and files stay.":"Bütün cari çatlar və günün bitmiş təqdimatları (komandalar, fayllar, final versiyalar, çıxış sırası, mövzular) <b>yalnız oxunan arxivə</b> köçürülür. Tələbələr boş çatla başlayır. Xallar və fayllar qalır.",
+"Scope":"Əhatə","Whole platform":"Bütün platforma","Class":"Sinif","Closing the same day again adds to the same archive; nothing is archived twice. Live presentations are skipped.":"Eyni gün yenidən bağlananda eyni arxivə əlavə olunur; heç nə iki dəfə arxivlənmir. Canlı təqdimatlar ötürülür.",
+"Archiving…":"Arxivlənir…","Could not open the file":"Faylı açmaq mümkün olmadı","Order":"Sıra","Topics":"Mövzular","Final":"Final","No final":"Final yoxdur","Presentations":"Təqdimatlar","Chats":"Çatlar",
+"Day closed: {m} messages and {p} presentations archived.":"Gün bağlandı: {m} mesaj və {p} təqdimat arxivləşdirildi.","{n} live presentation(s) skipped.":"{n} canlı təqdimat ötürüldü.",
+"New empty group":"Yeni boş qrup","Create a group without members and add students later.":"Üzvsüz qrup yaradın, tələbələri sonra əlavə edin.","Teacher":"Müəllim","admin":"admin",
+"Add a student":"Tələbə əlavə et","Add a student…":"Tələbə əlavə et…","Add":"Əlavə et","No groups yet. Students create them on the main site, or create an empty one here.":"Hələ qrup yoxdur. Tələbələr əsas saytda yaradır və ya burada boş qrup yarada bilərsiniz.",
+"Group name":"Qrupun adı","No student or teacher is required now. You can add them later.":"İndi tələbə və ya müəllim seçmək məcburi deyil. Onları sonra əlavə edə bilərsiniz.","Create":"Yarat",
+"Group name must be 1 to 30 characters":"Qrup adı 1-30 simvol olmalıdır","Size must be 1 to 10":"Ölçü 1-10 olmalıdır","Group created":"Qrup yaradıldı","Added to the group":"Qrupa əlavə edildi",
+"Supervising teacher":"Rəhbər müəllim","None":"Yoxdur"});
