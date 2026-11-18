@@ -1,0 +1,40 @@
+# Deploy to the existing Vercel project on every push to main — independent of Vercel's own Git auto-deploy,
+# which stopped firing after the ADIAK 1.0 release (production was stuck on that build).
+# Builds `www/` (scripts/build-www.mjs, same output as vercel.json) and promotes it to production.
+#
+# One-time setup by the repo owner (no secrets are committed):
+#   Settings → Secrets and variables → Actions:
+#     secret  VERCEL_TOKEN        – a Vercel access token (Vercel → Account Settings → Tokens), scope: team testelitest30-source
+#   The org and project IDs below are public identifiers, not secrets.
+name: Deploy to Vercel
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: vercel-production
+  cancel-in-progress: false
+
+env:
+  VERCEL_ORG_ID: team_RHN7lYVOb4E5oASkekBSnM5U
+  VERCEL_PROJECT_ID: prj_SgZkQJ5XAikhzG985C7mbnbkHAHQ
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Deploy production build to Vercel
+        run: |
+          npx vercel@48 pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx vercel@48 build --prod --token="$VERCEL_TOKEN"
+          npx vercel@48 deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
