@@ -1,0 +1,21 @@
+-- ADIAK 1.2 item 7: the current password is required and checked on the server.
+update auth.users set encrypted_password = extensions.crypt('old-pass', extensions.gen_salt('bf')) where id = test.id('s1');
+select test.as(test.id('s1'));
+select test.eq(public.change_my_password('wrong-pass', 'new-pass-1'), 'wrong', 'wrong current password: nothing changed');
+select test.throws($q$select public.change_my_password('', 'new-pass-1')$q$, 'current password', 'current password required');
+select test.throws($q$select public.change_my_password('old-pass', '123')$q$, 'at least 6', 'new password too short');
+select test.throws($q$select public.change_my_password('old-pass', 'old-pass')$q$, 'different', 'new must differ from current');
+select test.as_db();
+select test.ok((select encrypted_password = extensions.crypt('old-pass', encrypted_password) from auth.users where id = test.id('s1')), 'old password still valid after failures');
+select test.as(test.id('s1'));
+select test.eq(public.change_my_password('old-pass', 'new-pass-1'), 'ok', 'correct current password: changed');
+select test.as_db();
+select test.ok((select encrypted_password = extensions.crypt('new-pass-1', encrypted_password) from auth.users where id = test.id('s1')), 'new password stored (bcrypt)');
+select test.ok((select pw_updated_at is not null from public.profiles where id = test.id('s1')), 'password copy updated for class admins (student)');
+select test.as(test.id('s1'));
+select test.eq(public.change_my_password('old-pass', 'x-pass-2'), 'wrong', 'old password no longer accepted');
+select test.eq(public.change_my_password('old-pass', 'x-pass-2'), 'wrong', 'attempt 4');
+select test.eq(public.change_my_password('old-pass', 'x-pass-2'), 'wrong', 'attempt 5');
+select test.throws($q$select public.change_my_password('old-pass', 'x-pass-2')$q$, 'too many', 'rate limited after 5 attempts (failures count)');
+select test.as_anon();
+select test.throws($q$select public.change_my_password('a', 'bbbbbb')$q$, 'permission', 'anon cannot call it');

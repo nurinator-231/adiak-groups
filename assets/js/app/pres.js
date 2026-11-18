@@ -48,13 +48,13 @@ Object.assign(AZ_ERR, {
 });
 
 /* ---------- state ---------- */
-const PX = { on: false, acc: null, notes: [], cann: [], asg: [], asub: [], iss: [], ev: [], et: [], dr: [], ro: [], sp: [], spf: [], fl: [], sub: [], tk: [], an: [], lv: [], ls: [], sc: [], rb: [], log: [],
+const PX = { on: false, acc: null, notes: [], cann: [], asg: [], asub: [], iss: [], tp: [], tpk: [], ev: [], et: [], dr: [], ro: [], sp: [], spf: [], fl: [], sub: [], tk: [], an: [], lv: [], ls: [], sc: [], rb: [], log: [],
   cur: null, sec: "overview", off: 0, tm: null, loaded: false, hist: null };
 window.PX = PX;   // top-level const is not a window property; core.js (SN) and tests read window.PX
 const pxTables = { pres_events: "ev", pres_event_teams: "et", pres_draws: "dr", pres_roster: "ro", pres_speakers: "sp", pres_speakers_final: "spf",
   pres_files: "fl", pres_submissions: "sub", pres_tasks: "tk", pres_announcements: "an", pres_live: "lv", pres_live_slots: "ls", pres_scores: "sc", pres_rubrics: "rb", pres_speaker_log: "log",
-  class_announcements: "cann", assignments: "asg", assignment_submissions: "asub", class_issues: "iss" };
-const pxOrder = { pres_events: "id", pres_files: "id", pres_submissions: "version", pres_announcements: "id", pres_speaker_log: "id", class_announcements: "id", assignments: "id", assignment_submissions: "id", class_issues: "id" };
+  class_announcements: "cann", assignments: "asg", assignment_submissions: "asub", class_issues: "iss", pres_topics: "tp", pres_topic_picks: "tpk" };
+const pxOrder = { pres_topics: "id", pres_events: "id", pres_files: "id", pres_submissions: "version", pres_announcements: "id", pres_speaker_log: "id", class_announcements: "id", assignments: "id", assignment_submissions: "id", class_issues: "id" };
 
 async function pxBoot() {
   if (!sb || PX.on || PX.booting || !uid) return;
@@ -112,9 +112,11 @@ const NK = {
   "pres.opened": ["New presentation: {title}", "Open it to see your team workspace."], "pres.team_added": ["Your team takes part in {title}", ""],
   "pres.draw": ["Draw result: you present #{pos} of {n}", "{title}"], "pres.redraw": ["New draw (round {round}): you present #{pos}", "{title}"],
   "pres.redraw_needed": ["Team list changed: a new draw is needed", "{title}"], "pres.order_submitted": ["{team} submitted its speaking order", "Review and approve it."],
-  "pres.order_approved": ["Speaking order approved", "{title}"], "pres.order_returned": ["Speaking order reopened", "{note}"],
+  "pres.order_approved": ["Speaking order saved", "{title}"], "pres.order_returned": ["Speaking order reopened", "{note}"],
   "pres.order_reopened": ["{who} left: choose positions again", "{title}"], "pres.order_review": ["{team}: approved order needs review", "{who} left the team."],
-  "pres.final_submitted": ["{team} submitted final version {v}", "{file}"], "pres.final_approved": ["Final presentation approved (v{v})", "{title}"],
+  "pres.final_submitted": ["{team} chose final version {v}", "{file}"], "pres.final_approved": ["Final presentation selected (v{v})", "{title}"],
+  "pres.topics": ["Topic list published: {title}", "Choose your presentation topic."], "pres.topic_released": ["Your topic was released", "{topic} · {title}"],
+  "group.teacher": ["You supervise {group}", "You can follow the group chat."],
   "pres.final_returned": ["Final version returned for corrections", "{note}"], "pres.task_assigned": ["New task: {task}", "{title}"],
   "pres.announce": ["Announcement: {title}", "{text}"], "pres.due_changed": ["Deadline changed: {title}", "Check the new deadline."],
   "pres.rem24": ["Final presentation due in 24 hours", "{title}"], "pres.rem2": ["Final presentation due in 2 hours", "{title}"],
@@ -216,13 +218,13 @@ function pxPos(e, g) { const d = pxDraw(e); if (!d) return null; const i = d.res
 function pxReadiness(e, g) {
   const t = pxTeam(e, g); if (!t) return { pct: 0, parts: [] };
   const tk = PX.tk.filter(k => k.event_id === e && k.group_id === g && k.status !== "cancelled"), done = tk.filter(k => k.status === "done").length;
-  const parts = [[tr("Order approved"), t.speak_state === "approved" ? 1 : t.speak_state === "submitted" ? .5 : 0],
-    [tr("Final approved"), t.final_state === "approved" ? 1 : t.final_state === "submitted" ? .6 : 0],
+  const parts = [[tr("Order complete"), t.speak_state === "approved" ? 1 : 0],
+    [tr("Final chosen"), t.final_state === "approved" || t.final_state === "submitted" ? 1 : 0],
     [tr("Tasks done"), tk.length ? done / tk.length : 1]];
   return { pct: Math.round(parts.reduce((a, p) => a + p[1], 0) / parts.length * 100), parts, done, total: tk.length };
 }
 function pxMyEvents() {
-  return PX.ev.filter(e => e.status !== "draft" || pxIsStaff(e.class_tag)).sort((a, b) => {
+  return PX.ev.filter(e => !e.archived_at && (e.status !== "draft" || pxIsStaff(e.class_tag))).sort((a, b) => {
     const ma = pxMyGroup(a.id) ? 0 : 1, mb = pxMyGroup(b.id) ? 0 : 1; if (ma !== mb) return ma - mb;
     const sa = a.status === "done" ? 1 : 0, sb2 = b.status === "done" ? 1 : 0; if (sa !== sb2) return sa - sb2; return b.id - a.id; });
 }
@@ -242,7 +244,7 @@ function pxTick() { document.querySelectorAll("[data-lv]").forEach(el => { const
 
 /* ---------- UI ---------- */
 const pxChip = (txt, cls) => `<span class="chip ${cls || ""}">${txt}</span>`;
-function pxStateChip(s) { return { open: pxChip(tr("Open")), submitted: pxChip(tr("Waiting for approval"), "warn"), approved: pxChip(ic("check") + " " + tr("Approved"), "on"), needs_review: pxChip(tr("Needs review"), "warn"),
+function pxStateChip(s) { return { open: pxChip(tr("Open")), submitted: pxChip(tr("Waiting for approval"), "warn"), approved: pxChip(ic("check") + " " + tr("Accepted"), "on"), needs_review: pxChip(tr("Needs review"), "warn"),
   none: pxChip(tr("No final yet")), returned: pxChip(tr("Returned for corrections"), "warn") }[s] || pxChip(esc(s)); }
 function pxRing(p) { const r = 26, c = 2 * Math.PI * r; return `<svg class="pxring" viewBox="0 0 64 64" role="img" aria-label="${p}%"><circle cx="32" cy="32" r="${r}" class="bg"/><circle cx="32" cy="32" r="${r}" class="fg" stroke-dasharray="${c}" stroke-dashoffset="${c * (1 - p / 100)}"/><text x="32" y="37" text-anchor="middle">${p}%</text></svg>`; }
 
@@ -255,7 +257,7 @@ function pxPage() {
   const picker = list.length > 1 ? `<div class="seg pxevs">${list.map(e => `<button class="${e.id === ev.id ? "on" : ""}" onclick="PX.cur=${e.id};PX.sec='overview';render()">${esc(e.title)} ${e.status === "live" ? `<span class="chip live">${tr("live")}</span>` : ""}</button>`).join("")}</div>` : "";
   const secs = [["overview", ic("present"), tr("Overview")], ["order", ic("groups"), tr("Speaking order")], ["files", ic("file"), tr("Files")], ["tasks", ic("tasks"), tr("Tasks")], ["chat", ic("chat"), tr("Team chat")], ["feedback", ic("star"), tr("Feedback")]];
   const nav = g ? `<div class="seg pxsecs" role="tablist">${secs.map(([k, i, t]) => `<button role="tab" aria-selected="${PX.sec === k}" class="${PX.sec === k ? "on" : ""}" onclick="pxSec('${k}')">${i}<span>${t}</span></button>`).join("")}</div>` : "";
-  const body = !g ? pxOverview(ev, null) : ({ overview: pxOverview, order: pxOrderSec, files: pxFiles, tasks: pxTasks, chat: pxChat, feedback: pxFeedback }[PX.sec] || pxOverview)(ev, g);
+  const body = !g ? pxOverview(ev, null) + pxTopicsCard(ev, null) + pxMyUploads(ev, null) : ({ overview: (e2, g2) => pxOverview(e2, g2) + pxTopicsCard(e2, g2), order: pxOrderSec, files: pxFiles, tasks: pxTasks, chat: pxChat, feedback: pxFeedback }[PX.sec] || pxOverview)(ev, g);
   return `<div class="pxwrap">${picker}${pxHeader(ev, g)}${nav}${body}</div>`;
 }
 function pxSec(k) {
@@ -279,6 +281,18 @@ function pxLiveBanner(ev) {
   return `<div class="pxlive"><span class="livedot"></span><div style="flex:1;min-width:0"><b>${tr("Live now")}:</b> ${cur ? esc(cur.group_name) + " " + tr("presenting") : ""}${nx ? ` · ${tr("Up next")}: ${esc(nx.group_name)}` : ""}</div>
    <b class="lvt" data-lv="${ev.id}">${pxDur(l.duration_s * 1000 - pxLiveElapsed(l))}</b>${window.openLive ? `<button class="ok" onclick="openLive(${ev.id})">${ic("expand")} ${tr("Open live stage")}</button>` : ""}</div>`;
 }
+/* ---------- topics (ADIAK 1.2): the teacher's topic list, each student picks one ---------- */
+function pxTopicsCard(ev, g) {
+  const tps = PX.tp.filter(t => t.event_id === ev.id && !t.removed_at).sort((a, b) => a.position - b.position);
+  if (!tps.length) return "";
+  const picks = PX.tpk.filter(p => p.event_id === ev.id), mine = picks.find(p => p.user_id === uid), max = ev.topic_max == null ? 1 : ev.topic_max;
+  const can = !!g && pxMember(ev.id), lim = max === 0 ? tr("Any number of students per topic") : max === 1 ? tr("One student per topic") : tr("Up to {n} students per topic", { n: max });
+  return `<div class="card pxtopics"><div class="row sp"><b>${ic("tasks")} ${tr("Presentation topics")}</b><small class="mu">${lim}</small></div>
+    <p class="mu">${mine ? tr("Your topic is saved. You can change it until the presentation starts.") : can ? tr("Choose your topic. It is saved at once, no approval needed.") : tr("Topics chosen by the students")}</p>
+    <ol class="pxtl">${tps.map(t => { const who = picks.filter(p => p.topic_id === t.id), me = mine && mine.topic_id === t.id, full = max > 0 && who.length >= max && !me;
+      return `<li class="${me ? "me" : ""}${full ? " full" : ""}"><span class="ordn">${t.position}</span><div class="g"><b>${esc(t.title)}</b>${who.length ? `<br><small class="mu">${who.map(p => esc(p.user_name)).join(", ")}</small>` : ""}</div>
+        ${can ? (me ? `<button class="s sm" onclick="pxCall('pres_topic_unpick',{e:${ev.id}})">${tr("Cancel")}</button>` : full ? pxChip(tr("Taken")) : `<button class="ok sm" onclick="pxCall('pres_topic_pick',{tid:${t.id}},tr('Topic saved ✓'))">${tr("Choose")}</button>`) : (me ? pxChip(tr("You"), "on") : "")}</li>`; }).join("")}</ol></div>`;
+}
 function pxOverview(ev, g) {
   const d = pxDraw(ev.id), an = PX.an.filter(a => a.event_id === ev.id);
   const order = d ? `<div class="card"><div class="row sp"><b>${ic("dice")} ${tr("Order of teams")}</b><small class="mu">${tr("Round {n}", { n: d.round })} · ${pxDate(d.created_at)}</small></div><ol class="pxorder">${d.result.map((gid, i) => { const t = pxTeam(ev.id, gid);
@@ -294,17 +308,15 @@ function pxOrderSec(ev, g) {
   const t = pxTeam(ev.id, g), act = pxActive(ev.id, g), n = act.length, sp = PX.sp.filter(s => s.event_id === ev.id && s.group_id === g);
   const frozen = PX.spf.filter(s => s.event_id === ev.id && s.group_id === g).sort((a, b) => a.position - b.position);
   if (frozen.length) return `<div class="card"><b>${ic("lock")} ${tr("Speaking order")}</b><ol class="pxorder">${frozen.map(f => `<li class="${f.user_id === uid ? "me" : ""}"><span class="ordn">${f.placed ? f.position : "–"}</span><b>${esc(f.user_name)}</b>${f.placed ? "" : pxChip(tr("not chosen"), "warn")}</li>`).join("")}</ol></div>`;
-  const mine = sp.find(s => s.user_id === uid), host = (grp(g) || {}).host_id === uid, chosen = sp.filter(s => !s.withdrawn).length, member = pxMember(ev.id), open = t.speak_state === "open";
+  const mine = sp.find(s => s.user_id === uid), host = (grp(g) || {}).host_id === uid, chosen = sp.filter(s => !s.withdrawn).length, member = pxMember(ev.id), open = member;   // ADIAK 1.2: picks stay changeable until the event is frozen; no submit/approve step
   const slots = Array.from({ length: Math.max(n, sp.length) }, (_, i) => { const s = sp.find(x => x.position === i + 1), me = s && s.user_id === uid;
     return `<button class="pxslot${s ? " taken" : ""}${me ? " me" : ""}${s && s.withdrawn ? " gone" : ""}" ${open && member && (!s || me) ? `onclick="${me ? `pxCall('pres_unpick',{e:${ev.id}})` : `pxCall('pres_pick',{e:${ev.id},pos:${i + 1}})`}"` : "disabled"} aria-pressed="${!!me}">
       <span class="ordn">${i + 1}</span><span class="pxsn">${s ? esc(pxPersonName(s.user_id)) + (s.withdrawn ? " · " + tr("withdrawn") : "") : tr("Free")}</span>${me ? `<small>${tr("You")}</small>` : ""}</button>`; }).join("");
   const log = PX.log.filter(l => l.event_id === ev.id && l.group_id === g).slice(0, 8);
   return `<div class="card"><div class="row sp"><b>${ic("groups")} ${tr("Choose your position")}</b>${pxStateChip(t.speak_state)}</div>
-   <p class="mu">${open ? tr("Everyone must pick a different position, then anyone can submit.") : tr("The team host or your teacher approves the order.")} · ${tr("{a} of {b} chosen", { a: chosen, b: n })}</p>
+   <p class="mu">${t.speak_state === "approved" ? tr("The order is saved. You can still change your position until the presentation starts.") : tr("Everyone picks a different position. The order is saved automatically when it is complete, no approval needed.")} · ${tr("{a} of {b} chosen", { a: chosen, b: n })}</p>
    <div class="pxslots">${slots}</div>
-   <div class="row" style="margin-top:12px;flex-wrap:wrap">${open && member && chosen === n && n > 0 ? `<button class="ok" onclick="pxCall('pres_submit_order',{e:${ev.id}},'${tr("Sent ✓")}')">${ic("check")} ${tr("Submit order")}</button>` : ""}
-    ${t.speak_state === "submitted" && host ? `<button class="ok" onclick="pxCall('pres_approve_order',{e:${ev.id},g:${g}},'${tr("Approved")}')">${ic("check")} ${tr("Approve order")}</button>` : ""}
-    ${["submitted", "needs_review"].includes(t.speak_state) && host ? `<button class="s" onclick="pxCall('pres_return_order',{e:${ev.id},g:${g},note:null})">${ic("refresh")} ${tr("Reopen order")}</button>` : ""}</div></div>
+</div>
    ${log.length ? `<div class="card"><b>${ic("clock")} ${tr("History")}</b>${log.map(l => `<div class="pxlog"><span>${esc(pxPersonName(l.actor || l.user_id))}</span> <span class="mu">${esc(l.action)}${l.after_pos ? " → " + l.after_pos : ""}${l.note ? " · " + esc(l.note) : ""}</span><small class="mu">${pxDate(l.at)}</small></div>`).join("")}</div>` : ""}`;
 }
 const PX_EXT = ["pdf", "pptx", "ppt", "odp", "key", "docx", "doc", "xlsx", "xls", "odt", "txt", "png", "jpg", "jpeg", "webp", "gif", "mp4", "mov", "mp3", "m4a", "zip"];
@@ -338,24 +350,33 @@ async function pxOpenFile(fid) {
 }
 function pxSubmitFinal(fid, act) {
   const f = PX.fl.find(x => x.id === fid); if (!f) return;
-  const go2 = () => ask(tr("Submit this file as the final version?"), () => pxCall("pres_submit_final", { fid, expected_active: act }, tr("Sent ✓")));
+  const go2 = () => ask(tr("Use this file as your team's final presentation?"), () => pxCall("pres_submit_final", { fid, expected_active: act }, tr("Final selected ✓")));
   if (!/\.pdf$/i.test(f.path)) ask(tr("Final presentations should be PDF so they open in the live viewer. Upload it anyway?"), go2); else go2();
 }
 function pxFiles(ev, g) {
   const files = PX.fl.filter(f => f.event_id === ev.id && f.group_id === g), subs = PX.sub.filter(s => s.event_id === ev.id && s.group_id === g);
   const act = subs.find(s => s.state === "submitted" || s.state === "approved"), last = subs[0], member = pxMember(ev.id);
   const fname = id => { const f = files.find(x => x.id === id); return f ? f.name : "?"; };
-  const fin = act ? `<div class="pxfinal ${act.state}"><div class="pxfl">${act.state === "approved" ? ic("lock") : ic("clock")}<div style="min-width:0"><small>${tr("FINAL PRESENTATION")} · ${tr("Version {v}", { v: act.version })}</small>
-      <b>${esc(fname(act.file_id))}</b><span class="mu">${act.state === "approved" ? tr("approved by {nm}", { nm: esc(pxPersonName(act.reviewed_by)) }) + " · " + pxDate(act.reviewed_at) : tr("Pending review")}</span>
-      ${act.state === "approved" ? `<small class="mu">${tr("Locked: only your teacher can return it.")}</small>` : ""}</div></div><button class="s" onclick="pxOpenFile(${act.file_id})">${ic("eye")} ${tr("Open")}</button></div>`
-    : `<div class="pxfinal none"><div class="pxfl">${ic("flag")}<div><small>${tr("FINAL PRESENTATION")}</small><b>${tr("No final yet")}</b>${last && last.state === "returned" ? `<span class="warnt">${tr("Returned for corrections")}: ${esc(last.note || "")}</span>` : `<span class="mu">${tr("Pick a file below and press “Submit as final”.")}</span>`}</div></div></div>`;
+  // ADIAK 1.2: the chosen final takes effect at once; the team may choose another file until the presentation is frozen
+  const fin = act ? `<div class="pxfinal approved"><div class="pxfl">${ic("check")}<div style="min-width:0"><small>${tr("FINAL PRESENTATION")} · ${tr("Version {v}", { v: act.version })}</small>
+      <b>${esc(fname(act.file_id))}</b><span class="mu">${tr("chosen by {nm}", { nm: esc(pxPersonName(act.submitted_by)) })} · ${pxDate(act.submitted_at)}</span>
+      ${member ? `<small class="mu">${tr("Your team can choose another file until the presentation starts.")}</small>` : ""}</div></div><button class="s" onclick="pxOpenFile(${act.file_id})">${ic("eye")} ${tr("Open")}</button></div>`
+    : `<div class="pxfinal none"><div class="pxfl">${ic("flag")}<div><small>${tr("FINAL PRESENTATION")}</small><b>${tr("No final yet")}</b>${last && last.state === "returned" ? `<span class="warnt">${tr("Returned for corrections")}: ${esc(last.note || "")}</span>` : `<span class="mu">${tr("Upload a file below and press “Choose as final”. No approval needed.")}</span>`}</div></div></div>`;
   const rows = files.map(f => { const s = subs.find(x => x.file_id === f.id && (x.state === "submitted" || x.state === "approved")), inSub = subs.some(x => x.file_id === f.id);
     return `<div class="li pxfile${f.hidden_at ? " hid" : ""}"><span class="ic2">${ic("file")}</span><div class="g"><b>${esc(f.name)}</b>${s ? " " + pxChip(tr("Final"), "on") : ""}${f.hidden_at ? " " + pxChip(tr("Hidden")) : ""}<br><small class="mu">${esc(f.uploader_name)} · ${pxDate(f.created_at)} · ${fsize(f.size)}</small></div>
       <div class="pxfa"><button class="s" onclick="pxOpenFile(${f.id})" aria-label="${tr("Open")}">${ic("eye")}</button>
-      ${member && !f.hidden_at && !act ? `<button class="ok" onclick="pxSubmitFinal(${f.id},null)">${ic("flag")} ${tr("Submit as final")}</button>` : member && !f.hidden_at && act && act.state === "submitted" && act.file_id !== f.id ? `<button class="s" onclick="pxSubmitFinal(${f.id},${act.id})">${ic("flag")} ${tr("Submit as final")}</button>` : ""}
+      ${member && !f.hidden_at && (!act || act.file_id !== f.id) ? `<button class="${act ? "s" : "ok"}" onclick="pxSubmitFinal(${f.id},${act ? act.id : null})">${ic("flag")} ${tr("Choose as final")}</button>` : ""}
       ${member && !inSub && f.uploader === uid ? (f.hidden_at ? `<button class="s" onclick="pxCall('pres_unhide_file',{fid:${f.id}})">${tr("Restore")}</button>` : `<button class="s" onclick="pxCall('pres_hide_file',{fid:${f.id},reason:null})">${tr("Hide")}</button>`) : ""}</div></div>`; }).join("");
-  const hist = subs.length ? `<div class="card"><b>${ic("layers")} ${tr("Submissions")}</b>${subs.map(s => `<div class="pxlog"><span>${tr("Version {v}", { v: s.version })} · ${esc(fname(s.file_id))}</span> <span class="mu">${{ submitted: tr("Pending review"), approved: tr("Approved"), returned: tr("Returned for corrections"), superseded: tr("History") }[s.state]}${s.note ? " · " + esc(s.note) : ""}</span><small class="mu">${pxDate(s.reviewed_at || s.submitted_at)}</small></div>`).join("")}</div>` : "";
-  return `<div class="card">${fin}</div><div class="card"><div class="row sp"><b>${ic("layers")} ${tr("Drafts and versions")}</b>${member ? `<label class="btn ok upl">${ic("upload")} ${tr("Upload file")}<input type="file" hidden accept=".${PX_EXT.join(",.")}" onchange="pxUpload(this,${ev.id},${g})"></label>` : ""}</div>${rows || `<p class="mu">${tr("No files yet")}</p>`}</div>${hist}`;
+  const hist = subs.length ? `<div class="card"><b>${ic("layers")} ${tr("Submissions")}</b>${subs.map(s => `<div class="pxlog"><span>${tr("Version {v}", { v: s.version })} · ${esc(fname(s.file_id))}</span> <span class="mu">${{ submitted: tr("Final"), approved: tr("Final"), returned: tr("Returned for corrections"), superseded: tr("Replaced") }[s.state]}${s.note ? " · " + esc(s.note) : ""}</span><small class="mu">${pxDate(s.reviewed_at || s.submitted_at)}</small></div>`).join("")}</div>` : "";
+  return `<div class="card">${fin}</div><div class="card"><div class="row sp"><b>${ic("layers")} ${tr("Drafts and versions")}</b>${member ? `<label class="btn ok upl">${ic("upload")} ${tr("Upload file")}<input type="file" hidden accept=".${PX_EXT.join(",.")}" onchange="pxUpload(this,${ev.id},${g})"></label>` : ""}</div>${rows || `<p class="mu">${tr("No files yet")}</p>`}</div>${hist}${pxMyUploads(ev, g)}`;
+}
+// Feedback #11: files stay bound to the team they were uploaded for. Someone who changed team still sees (and can open)
+// their own uploads of this presentation here instead of losing them (server: pres_files policy allows the uploader).
+function pxMyUploads(ev, g) {
+  const mine = PX.fl.filter(f => f.event_id === ev.id && f.uploader === uid && f.group_id !== g);
+  if (!mine.length) return "";
+  return `<div class="card"><b>${ic("upload")} ${tr("My uploads in other teams")}</b><p class="mu">${tr("You uploaded these while you were in another team. They stay with that team.")}</p>${mine.map(f =>
+    `<div class="li pxfile"><span class="ic2">${ic("file")}</span><div class="g"><b>${esc(f.name)}</b><br><small class="mu">${esc((pxTeam(ev.id, f.group_id) || {}).group_name || "?")} · ${pxDate(f.created_at)} · ${fsize(f.size)}</small></div><div class="pxfa"><button class="s" onclick="pxOpenFile(${f.id})" aria-label="${tr("Open")}">${ic("eye")}</button></div></div>`).join("")}</div>`;
 }
 function pxTasks(ev, g) {
   const tk = PX.tk.filter(k => k.event_id === ev.id && k.group_id === g).sort((a, b) => (a.status === "done") - (b.status === "done") || (a.due || "z").localeCompare(b.due || "z"));
@@ -417,3 +438,44 @@ const XHOME = [pxHomeCard];
 function xHomeCards() { return XHOME.map(f => { try { return f(); } catch (e) { return ""; } }).join(""); }
 // boot also after a cached start or a re-login (the "first ready" hook does not fire then); once per signed-in user
 setInterval(() => { if (sb && uid && typeof ME === "function" && ME() && PX.tried !== uid && !PX.booting) pxBoot(); if (!uid && PX.on) { PX.on = false; PX.tried = null; PX.notes = []; PX.acc = null; } }, 700);
+
+/* ---------- ADIAK 1.2 translations (pres, studio, chat, settings) ---------- */
+Object.assign(AZ, {
+  "Accepted": "Qəbul edildi", "Order complete": "Sıra tamamlandı", "Final chosen": "Final seçildi",
+  "The order is saved. You can still change your position until the presentation starts.": "Sıra yadda saxlanıldı. Təqdimat başlayana qədər yerinizi dəyişə bilərsiniz.",
+  "Everyone picks a different position. The order is saved automatically when it is complete, no approval needed.": "Hər kəs fərqli yer seçir. Sıra tamamlananda avtomatik yadda saxlanılır, təsdiq lazım deyil.",
+  "Use this file as your team's final presentation?": "Bu fayl komandanızın final təqdimatı olsun?", "Final selected ✓": "Final seçildi ✓", "chosen by {nm}": "{nm} seçib",
+  "Your team can choose another file until the presentation starts.": "Təqdimat başlayana qədər komandanız başqa fayl seçə bilər.",
+  "Upload a file below and press “Choose as final”. No approval needed.": "Aşağıda fayl yükləyin və “Final kimi seç” düyməsini basın. Təsdiq lazım deyil.",
+  "Choose as final": "Final kimi seç", "Replaced": "Əvəz edildi",
+  "My uploads in other teams": "Digər komandalardakı yükləmələrim", "You uploaded these while you were in another team. They stay with that team.": "Bunları başqa komandada olarkən yükləmisiniz. Onlar həmin komandada qalır.",
+  "Speaking order saved": "Çıxış sırası qəbul edildi", "{team} chose final version {v}": "{team} final versiya {v} seçdi", "Final presentation selected (v{v})": "Final təqdimat seçildi (v{v})",
+  "Topic list published: {title}": "Mövzu siyahısı: {title}", "Choose your presentation topic.": "Təqdimat mövzunuzu seçin.", "Your topic was released": "Mövzu seçiminiz ləğv edildi",
+  "You supervise {group}": "{group} qrupuna rəhbərlik edirsiniz", "You can follow the group chat.": "Qrup çatını izləyə bilərsiniz.",
+  "Any number of students per topic": "Bir mövzunu istənilən sayda tələbə seçə bilər", "One student per topic": "Hər mövzu bir tələbəyə", "Up to {n} students per topic": "Hər mövzuya ən çox {n} tələbə",
+  "Presentation topics": "Təqdimat mövzuları", "Your topic is saved. You can change it until the presentation starts.": "Mövzunuz yadda saxlanıldı. Təqdimat başlayana qədər dəyişə bilərsiniz.",
+  "Choose your topic. It is saved at once, no approval needed.": "Mövzunuzu seçin. Dərhal yadda saxlanılır, təsdiq lazım deyil.", "Topics chosen by the students": "Tələbələrin seçdiyi mövzular",
+  "Taken": "Tutulub", "Topic saved ✓": "Mövzu yadda saxlanıldı ✓", "Choose": "Seç",
+  "Students' speaking order and final file take effect without your approval. You can still return a final for corrections.": "Tələbələrin çıxış sırası və final faylı sizin təsdiqiniz olmadan qüvvəyə minir. Finalı düzəliş üçün yenə də geri qaytara bilərsiniz.",
+  "Files": "Fayllar", "Note": "Qeyd", "Step 1 · Title": "1-ci addım · Başlıq", "Step 2 · Topic list": "2-ci addım · Mövzu siyahısı",
+  "Upload your list of topics as TXT or Word (DOCX), one topic per line or paragraph. Students choose from it.": "Mövzu siyahınızı TXT və ya Word (DOCX) faylı kimi yükləyin: hər sətirdə və ya abzasda bir mövzu. Tələbələr bu siyahıdan seçir.",
+  "Choose another file": "Başqa fayl seç", "Upload topic list": "Mövzu siyahısını yüklə", "Reading the file…": "Fayl oxunur…", "{n} topics found": "{n} mövzu tapıldı", "Remove": "Sil",
+  "Students per topic (0 = unlimited)": "Bir mövzuya tələbə sayı (0 = limitsiz)", "Saving…": "Yadda saxlanılır…",
+  "No topic list uploaded. Create the presentation without topics? You can add them later.": "Mövzu siyahısı yüklənməyib. Təqdimat mövzusuz yaradılsın? Mövzuları sonra əlavə edə bilərsiniz.",
+  "Presentation created with {n} topics ✓": "Təqdimat {n} mövzu ilə yaradıldı ✓", "{n} topics read from the file ✓": "Fayldan {n} mövzu oxundu ✓", "Could not read the file": "Faylı oxumaq mümkün olmadı",
+  "A presentation can have at most 300 topics": "Bir təqdimatda ən çox 300 mövzu ola bilər", "The file has no topics": "Faylda mövzu tapılmadı", "This is not a valid DOCX file": "Bu, düzgün DOCX faylı deyil",
+  "This device cannot read DOCX files. Save the list as TXT and try again.": "Bu cihaz DOCX faylını oxuya bilmir. Siyahını TXT kimi saxlayıb yenidən cəhd edin.",
+  "Old Word (.doc) files are not supported. Save as DOCX or TXT.": "Köhnə Word (.doc) faylları dəstəklənmir. DOCX və ya TXT kimi saxlayın.",
+  "Only TXT and DOCX files are supported": "Yalnız TXT və DOCX faylları dəstəklənir", "The file is empty": "Fayl boşdur", "The file is too large (max 2 MB)": "Fayl çox böyükdür (maks. 2 MB)",
+  "Topics": "Mövzular", "{a} of {b} students chose": "{b} tələbədən {a} nəfər seçib", "Release": "Seçimi ləğv et", "No topics yet. Upload a TXT or DOCX list.": "Hələ mövzu yoxdur. TXT və ya DOCX siyahısı yükləyin.",
+  "Not chosen yet": "Hələ seçməyənlər", "Add topics from a file": "Fayldan mövzu əlavə et", "Topic": "Mövzu",
+  "Remove the topic “{t}”? Students who chose it must choose again.": "“{t}” mövzusu silinsin? Onu seçən tələbələr yenidən seçməlidir.",
+  "Release this student's topic choice?": "Bu tələbənin mövzu seçimi ləğv edilsin?", "Removed": "Silindi", "Released": "Ləğv edildi",
+  "End the day": "Günü bitir", "Archived": "Arxivlənmiş",
+  "End the day for class {c}? The class chats and today's finished presentations (files, finals, order, topics) are moved to the archive.": "{c} sinfi üçün gün bitirilsin? Sinif çatları və bu günün bitmiş təqdimatları (fayllar, finallar, sıra, mövzular) arxivə köçürülür.",
+  "Day closed: {m} messages and {p} presentations archived.": "Gün bağlandı: {m} mesaj və {p} təqdimat arxivləşdirildi.", "{n} live presentation(s) skipped.": "{n} canlı təqdimat ötürüldü.",
+  "Sending…": "Göndərilir…", "Seen": "Görüldü", "Seen by {n}": "Görüldü · {n}", "Sent": "Göndərildi", "Seen by": "Görənlər", "just now": "indicə", "{n} min ago": "{n} dəq əvvəl",
+  "today at {t}": "bu gün {t}", "yesterday at {t}": "dünən {t}", "last seen {t}": "son aktivlik: {t}", "offline": "oflayn", "{n} of {m} online": "{m} nəfərdən {n} onlayn",
+  "Current password": "Cari parol", "Repeat new password": "Yeni parolu təkrarlayın", "Enter your current password": "Cari parolu daxil edin",
+  "The new password must be different from the current one": "Yeni parol cari paroldan fərqli olmalıdır", "Current password is incorrect": "Cari parol düzgün deyil"
+});

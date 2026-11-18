@@ -117,6 +117,15 @@ const AZ_ERR={
 "New password should be different from the old password.":"Yeni parol köhnə paroldan fərqli olmalıdır.","Password should be at least 6 characters.":"Parol ən azı 6 simvol olmalıdır.",
 "Password should be at least 6 characters":"Parol ən azı 6 simvol olmalıdır","Failed to fetch":"Serverlə əlaqə yoxdur. İnternetinizi yoxlayın.","Invalid login credentials":"ID və ya parol yanlışdır"
 };
+// ADIAK 1.2 server messages
+Object.assign(AZ_ERR,{"Teachers do not join groups":"Müəllimlər qruplara qoşulmur","Class not found":"Sinif tapılmadı","A group with this name already exists in this class":"Bu sinifdə bu adda qrup artıq var",
+ "Choose a teacher of this class":"Bu sinfin müəllimini seçin","You cannot read this chat":"Bu çatı oxuya bilməzsiniz","Enter your current password":"Cari parolu daxil edin","At least 6 characters":"Ən azı 6 simvol",
+ "The password is too long (max 72 characters)":"Parol çox uzundur (maks. 72 simvol)","The new password must be different from the current one":"Yeni parol cari paroldan fərqli olmalıdır",
+ "The file has no topics":"Faylda mövzu tapılmadı","Too many lines in the file (max 1000)":"Faylda sətir çox çoxdur (maks. 1000)","A presentation can have at most 300 topics":"Bir təqdimatda ən çox 300 mövzu ola bilər",
+ "Topic not found":"Mövzu tapılmadı","Topic must be 1 to 200 characters":"Mövzu 1-200 simvol olmalıdır","This topic is already in the list":"Bu mövzu artıq siyahıdadır",
+ "The limit must be 0 (unlimited) to 50":"Limit 0 (limitsiz) ilə 50 arasında olmalıdır","Topics are locked: the presentation is live or finished":"Mövzular bağlıdır: təqdimat canlıdır və ya bitib",
+ "This topic is already taken":"Bu mövzu artıq tutulub","The presentation is finished":"Təqdimat bitib","Only students can be placed in groups":"Qruplara yalnız tələbələr əlavə edilə bilər",
+ "This team belongs to another class group":"Bu komanda başqa sinfə aiddir","Person not found":"İstifadəçi tapılmadı"});
 const AZ_ERR_RE=[[/^The group limit \((\d+)\) is reached$/,"Qrup limitinə ({1}) çatılıb"]];
 
 /* Qrup çatındakı sistem mesajları (bazada ingiliscə saxlanılır, burada göstərilərkən tərcümə olunur) */

@@ -89,6 +89,18 @@
 - `node tests/smoke.mjs [label]`, `node tests/tokens-check.mjs`, and `node tests/screens.mjs <label>` (all screens × 360/390/430/768/1280/1440 × light/dark;
   fails on horizontal overflow, page errors, small tabbar targets, hidden chat composer). Pre-installed Playwright; output in gitignored `tests/out/`.
 - Supabase is fully mocked; tests must never authenticate against or write to production. Run both before every design PR.
+- ADIAK 1.2 feature tests: `node tests/v12-ui.mjs` (browser), `node tests/topics-parse.mjs` (TXT/DOCX parser), DB tests `tests/db/26-31_*.sql`.
+
+## ADIAK 1.2 (branch `claude/loving-bell-1ydez1`, migrations `20261117100000`…`20261117100600`, not in production yet)
+- No approval step: `_pres_order_settle` accepts a complete speaking order; `pres_submit_final` stores the final as approved (team may replace it).
+- Group role ≠ system role: participation = `role='student'` (+ class). Client helper `isPart(p)` (core.js); never filter group members by admin flags.
+- Empty groups `admin_create_group`, supervising teacher `groups.teacher_id` (`admin_group_set_teacher`, `_chan_ok` allows the group chat).
+- Receipts `message_reads` + `mark_read` (realtime; not for `all`), presence `user_presence` + `presence_ping`/`presence_bye`; RLS via class-B helpers `_chan_read`, `_seen_ok`.
+- Password: `change_my_password(cur, pw)` (returns 'wrong' so failures count in the rate limit). The app no longer uses `auth.updateUser` in settings.
+- Topics: `pres_topics`, `pres_topic_picks`, `pres_events.topic_max/topics_source`; parser between `topics-parser:start/end` in studio.js (no DOM).
+- Day archive: `close_day(lbl, dissolve, cls)` (one archive per Baku day + scope, `archived_presentations` snapshots, atomic); `admin_close_day` wraps it.
+- `_notify` skips `auth.uid()`; mention pushes are skipped on devices that already get the message push.
+- Rollback: `supabase/rollback/v12_restore.sql` (restores the 14 replaced functions byte-for-byte, revokes new RPCs, keeps data).
 
 ## Token efficiency
 - Read only the files you need; use grep and line ranges. Do not re-audit the repo or dump whole files.

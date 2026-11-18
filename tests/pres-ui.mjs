@@ -27,12 +27,12 @@ await H.test("speaking order: occupied slot disabled, free slot calls pres_pick(
   const c = (env.log.calls || []).find(x => x.fn === "pres_pick"); assert(c && c.body.pos === 2 && c.body.e === 1, "pres_pick call " + JSON.stringify(c));
   await H.shot(env.page, "pres-order"); return env;
 });
-await H.test("files: FINAL panel shows pending review; drafts list; submit-as-final asks to confirm", async () => {
+await H.test("files: FINAL panel shows the chosen final without review; drafts list; choose-as-final asks to confirm", async () => {
   const env = await H.open({ user: IDS.student }); await settle(env.page, 1200); await goPres(env.page);
   await env.page.evaluate(() => pxSec("files")); await settle(env.page);
-  const fin = await env.page.textContent(".pxfinal"); assert(fin.includes("Ekologiya — final.pdf") && fin.includes("Yoxlanılır"), "final panel: " + fin);
+  const fin = await env.page.textContent(".pxfinal"); assert(fin.includes("Ekologiya — final.pdf") && fin.includes("seçib") && !fin.includes("Yoxlanılır"), "final panel: " + fin);
   assert((await env.page.$$(".pxfile")).length === 2, "two files");
-  const b = await env.page.$(".pxfile button:has-text('Final kimi göndər')"); assert(b, "submit-as-final button for the other draft");
+  const b = await env.page.$(".pxfile button:has-text('Final kimi seç')"); assert(b, "choose-as-final button for the other draft");
   await b.click(); await settle(env.page, 300); assert(await env.page.$("#modal .ov"), "confirmation dialog");
   await H.shot(env.page, "pres-files"); return env;
 });

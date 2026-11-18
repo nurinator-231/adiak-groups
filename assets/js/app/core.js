@@ -26,7 +26,9 @@ const permList=p=>["admin","points","groups","chats","passwords","panel"].filter
 // Sağ alt küncdəki 'Created by' kartı
 const credits=inl=>`<div class="credits${inl?" inline":""}"><small>${tr("Created by")}</small><div><b>Sübhan Camalzadə</b> <span class="chip tag">${ic("shield")} Admin</span></div><div><b>Nurəli Qasımlı</b> <span class="chip tag">${ic("shield")} Admin</span></div></div>`;
 // Tələbələrin siyahısı (müəllim və Host daxil deyil)
-const ppl=()=>Object.values(P).filter(p=>!p.is_admin&&p.role!=="teacher"&&!(p.perms||[]).includes("admin")&&(viewerTag()===undefined||p.class_tag===viewerTag())).sort((a,b)=>a.name.localeCompare(b.name));
+// Qrup iştirakçısı: sistem rolu (admin) qrupdakı tələbə rolundan ayrıdır; yalnız müəllimlər və sinifsiz Host hesabı iştirak etmir
+const isPart=p=>!!p&&p.role!=="teacher"&&(!p.is_admin||!!p.class_tag);
+const ppl=()=>Object.values(P).filter(p=>isPart(p)&&(viewerTag()===undefined||p.class_tag===viewerTag())).sort((a,b)=>a.name.localeCompare(b.name));
 // Akademik qrup (class_tag): tələbə yalnız öz akademik qrupunun komandalarını və boş tələbələrini görür; müəllim/admin hamısını görür
 // Heyət (müəllim/admin): açdığı sinfə baxır (ACLASS). Tələbə: yalnız öz sinfinə. undefined = məhdudiyyət yoxdur
 const isStaff=u=>!!u&&(u.role==="teacher"||u.is_admin||(u.perms||[]).includes("admin"));
@@ -38,13 +40,13 @@ const visG=()=>G.filter(sameClass);
 const needTag=()=>{const u=ME();return !!u&&u.role==="student"&&!isStaff(u)&&!u.class_tag};
 const mem=g=>ppl().filter(p=>p.group_id===g), idle=()=>ppl().filter(p=>p.group_id===null&&sameClass(p));
 const gname=id=>{const g=grp(id);return g?g.name:"?"}, gcol=id=>`hsl(${(id*67+200)%360} 70% 52%)`;
-const gchip=p=>p.is_admin?`<span class="chip">${tr("host")}</span>`:p.role==="teacher"?`<span class="chip">${tr("teacher")}</span>`:p.group_id===null?`<span class="chip on">${tr("idle")}</span>`:`<span class="chip" style="background:${gcol(p.group_id)}22;color:${gcol(p.group_id)}">${esc(gname(p.group_id))}</span>`;
+const gchip=p=>!isPart(p)&&p.is_admin?`<span class="chip">${tr("host")}</span>`:p.role==="teacher"?`<span class="chip">${tr("teacher")}</span>`:p.group_id===null?`<span class="chip on">${tr("idle")}</span>`:`<span class="chip" style="background:${gcol(p.group_id)}22;color:${gcol(p.group_id)}">${esc(gname(p.group_id))}</span>`;
 const dots=(k,c,col)=>Array.from({length:c},(_,i)=>`<i class="dot" style="${i<k?"background:"+col:""}"></i>`.replace('class="dot"',i<k?'class="dot f"':'class="dot"')).join("");
 const dmKey=(a,b)=>a<b?`d:${a}:${b}`:`d:${b}:${a}`;
 const RANKS=[["Newcomer",0],["Speaker",10],["Orator",25],["Maestro",50]];
 const rank=p=>{let i=0;RANKS.forEach((r,j)=>{if(p>=r[1])i=j});const nx=RANKS[i+1];return{name:tr(RANKS[i][0]),pct:nx?Math.round((p-RANKS[i][1])/(nx[1]-RANKS[i][1])*100):100}};
 const av=(p,c="")=>{let h=0;for(const ch of p.name)h=(h*31+ch.charCodeAt(0))%360;
- return`<div class="av ${c}" onclick="event.stopPropagation();showProfile('${p.id}')" style="background:hsl(${h},55%,48%)">${p.avatar?`<img src="${esc(p.avatar)}" alt="">`:esc(p.name[0].toUpperCase())}</div>`};
+ return`<div class="av ${c}${online.has(p.id)&&p.id!==uid?" onl":""}" onclick="event.stopPropagation();showProfile('${p.id}')" style="background:hsl(${h},55%,48%)">${p.avatar?`<img src="${esc(p.avatar)}" alt="">`:esc(p.name[0].toUpperCase())}</div>`};
 
 /* ================= SƏSLƏR (hazır fayl yoxdur, brauzerdə yaradılır) ================= */
 // Brauzerdə tək bir səs tonu yaradır
@@ -124,7 +126,7 @@ const totalUnread=()=>{let n=0;new Set(M.map(m=>m.channel)).forEach(c=>{n+=unrea
 // Çat yalnız həqiqətən ekranda göründüyü zaman "açıq" sayılır (telefonda çat səhifəsi, kompüterdə "Çat" tabı)
 const visibleConv=()=>conv&&(phone()?(sheet&&sp==="chat"):tab==="chat")?conv:null;
 // Açıq çatı oxunmuş kimi qeyd edir
-function markSeen(all){const chs=all?[...new Set(M.map(m=>m.channel))]:(visibleConv()?[conv]:[]);let ch=false;
+function markSeen(all){const vc=visibleConv();if(vc)rdMark(vc);const chs=all?[...new Set(M.map(m=>m.channel))]:(visibleConv()?[conv]:[]);let ch=false;
  chs.forEach(c=>{const ids=M.filter(m=>m.channel===c).map(m=>m.id);if(ids.length){const mx=Math.max(...ids);if((SEEN[c]||0)<mx){SEEN[c]=mx;ch=true}}});if(ch)saveSeen()}
 // Mənim hərəkət etməli olduğum müraciətlər və kick səsvermələri
 function myVotes(){const u=ME();if(!u||u.group_id===null)return{j:[],k:[]};const g=grp(u.group_id),host=!!g&&g.host_id===uid;
@@ -238,15 +240,48 @@ const sched=t=>{if(t)pendT.add(t);else pendAll=true;clearTimeout(tmSched);tmSche
 function subscribe(){if(chan)return;
  chan=sb.channel("room",{config:{presence:{key:uid}}})
   .on("postgres_changes",{event:"*",schema:"public"},ev=>{const t=ev.table;
+   if(t==="message_reads"){rdIn(ev);return}
    if(window.onDbChange&&onDbChange(t,ev))return;
    if(t==="app_settings"){loadMeta().then(render);return}
    if(t==="messages"&&ev.eventType==="INSERT"&&onMsg(ev.new))return;
    if(t==="messages"&&ev.eventType==="UPDATE"&&ev.new&&ev.new.id!=null){const i=M.findIndex(x=>x.id===ev.new.id);if(i>=0){M[i]={...M[i],...ev.new};render();return}}
    sched(t);if(t==="profiles")sched("point_events")})
-  .on("presence",{event:"sync"},()=>{const n=new Set(Object.keys(chan.presenceState())),same=n.size===online.size&&[...n].every(x=>online.has(x));online=n;if(!same)render()})
-  .subscribe(s=>{if(s==="SUBSCRIBED"){chan.track({at:Date.now()});return}
+  .on("presence",{event:"sync"},()=>{const n=new Set(Object.keys(chan.presenceState())),same=n.size===online.size&&[...n].every(x=>online.has(x));online.forEach(x=>{if(!n.has(x))LS[x]=new Date().toISOString()});online=n;if(!same)render()})
+  .subscribe(s=>{if(s==="SUBSCRIBED"){tracked=false;if(document.visibilityState==="visible"&&Date.now()-actAt<IDLE_MS)presOn();lsLoad();return}
    if(s==="CHANNEL_ERROR"||s==="TIMED_OUT"||s==="CLOSED"){chan=null;clearTimeout(tmChan);tmChan=setTimeout(()=>{if(uid&&!chan)subscribe()},3000)}})}
 addEventListener("online",()=>{if(uid&&!chan)subscribe()});
+
+/* ================= ADIAK 1.2: OXUNMA STATUSU (GÖRÜLDÜ) VƏ ONLAYN / SON AKTİVLİK =================
+   Görüldü: hər oxucu üçün serverdə kanal başına son oxunan mesaj id-si (message_reads, real vaxtda). "all" kanalında yoxdur.
+   Onlayn: Realtime Presence (bağlantı kəsiləndə/tətbiq bağlananda server özü çıxarır) + fəaliyyət: tab gizli 60 s və ya 5 dəq
+   hərəkətsizlikdən sonra untrack; son aktivlik user_presence-də saxlanılır (presence_ping/presence_bye). */
+let RD={},RDL={},RDS={},LS={},actAt=Date.now(),tracked=false,tmHide=null;
+const IDLE_MS=5*60e3;
+async function rdLoad(ch){if(!sb||!uid||!ch||ch==="all"||RDL[ch])return;RDL[ch]=1;try{const r=await sb.from("message_reads").select("user_id,last_read_id,read_at").eq("channel",ch);if(!r.error){RD[ch]=r.data||[];if(ch===conv)render()}}catch(e){}}
+function rdIn(ev){const n=ev&&ev.new&&ev.new.channel?ev.new:null;if(!n)return;const a=RD[n.channel]||(RD[n.channel]=[]),i=a.findIndex(x=>x.user_id===n.user_id);if(i>=0)a[i]=n;else a.push(n);if(n.channel===conv)render()}
+function rdMark(ch){if(!sb||!uid||!ch||ch==="all"||document.visibilityState!=="visible")return;const ids=M.filter(m=>m.channel===ch&&Number.isInteger(m.id)).map(m=>m.id);if(!ids.length)return;
+ const mx=Math.max(...ids);if((RDS[ch]||0)>=mx)return;RDS[ch]=mx;sb.rpc("mark_read",{ch,mid:mx}).then(()=>{},()=>{})}
+const readers=m=>(RD[m.channel]||[]).filter(r=>r.user_id!==uid&&r.last_read_id>=m.id);
+// öz mesajım üçün status: göndərilir / göndərildi / görüldü (qrupda neçə nəfər)
+function rdMarkHtml(m,last){if(m.channel==="all"||m.deleted)return"";if(m._tmp)return`<span class="rd" title="${tr("Sending…")}">${ic("clock")}</span>`;
+ const r=readers(m),dm=m.channel[0]==="d",seen=r.length>0,lbl=seen?(dm?tr("Seen"):tr("Seen by {n}",{n:r.length})):tr("Sent");
+ return`<span class="rd${seen?" on":""}"${!dm&&seen?` role="button" tabindex="0" onclick="event.stopPropagation();rdWho(${m.id})"`:""} aria-label="${lbl}">${seen?"✓✓":"✓"}${last?" "+lbl:""}</span>`}
+function rdWho(id){const m=M.find(x=>x.id===id);if(!m)return;const r=readers(m);
+ $("#modal").innerHTML=`<div class="ov" onclick="if(event.target===this)closeM()"><div class="card" style="max-width:340px;width:100%"><b>${ic("eye")} ${tr("Seen by")}</b>${r.map(x=>`<div class="li">${P[x.user_id]?av(P[x.user_id]):""}<div class="g">${esc(nameOf(x.user_id))}<br><small class="mu">${lsRel(x.read_at)}</small></div></div>`).join("")}<button class="s" style="width:100%;margin-top:8px" onclick="closeM()">${tr("Close")}</button></div></div>`}
+// onlayn / son aktivlik
+const lsRel=iso=>{if(!iso)return"";const d=new Date(iso),s=(Date.now()-d)/1e3,hm2=String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
+ if(s<60)return tr("just now");if(s<3600)return tr("{n} min ago",{n:Math.floor(s/60)});const t=new Date();if(d.toDateString()===t.toDateString())return tr("today at {t}",{t:hm2});
+ if(d.toDateString()===new Date(t-864e5).toDateString())return tr("yesterday at {t}",{t:hm2});return d.toLocaleDateString(LANG==="az"?"az":"en",{day:"numeric",month:"short"})+" "+hm2};
+const lastSeen=id=>online.has(id)?tr("online"):LS[id]?tr("last seen {t}",{t:lsRel(LS[id])}):tr("offline");
+async function lsLoad(){if(!sb||!uid)return;try{const r=await sb.from("user_presence").select("user_id,last_seen_at").limit(2000);if(!r.error&&r.data){r.data.forEach(x=>{if(!LS[x.user_id]||LS[x.user_id]<x.last_seen_at)LS[x.user_id]=x.last_seen_at});render()}}catch(e){}}
+const presPing=a=>{if(sb&&uid)sb.rpc("presence_ping",{active:a}).then(()=>{},()=>{})};
+function presOn(){if(!chan||tracked||!uid)return;tracked=true;try{chan.track({at:Date.now()})}catch(e){}presPing(true)}
+function presOff(){if(!chan||!tracked)return;tracked=false;try{chan.untrack()}catch(e){}if(sb&&uid)sb.rpc("presence_bye").then(()=>{},()=>{})}
+["pointerdown","keydown","touchstart","wheel"].forEach(e=>addEventListener(e,()=>{actAt=Date.now();if(!tracked&&uid&&document.visibilityState==="visible")presOn()},{passive:true}));
+document.addEventListener("visibilitychange",()=>{clearTimeout(tmHide);if(document.visibilityState==="visible"){actAt=Date.now();presOn();if(conv)rdMark(conv)}else tmHide=setTimeout(presOff,60e3)});
+addEventListener("pagehide",()=>presOff());
+setInterval(()=>{if(!uid||!chan)return;if(document.visibilityState==="visible"&&Date.now()-actAt<IDLE_MS){if(!tracked)presOn();else presPing(true)}else if(tracked&&Date.now()-actAt>=IDLE_MS)presOff()},60e3);
+setInterval(()=>{if(uid&&document.visibilityState==="visible")lsLoad()},180e3);
 
 /* ================= AYARLAR VƏ TƏK CİHAZ QAYDASI ================= */
 const maxG=()=>+SET.max_groups||6;

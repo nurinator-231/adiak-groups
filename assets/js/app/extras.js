@@ -85,7 +85,7 @@ function badgesOf(p) {
   ];
 }
 const badgeGrid = L => `<div class="bdgs">${L.map(b => `<div class="bdg ${b.on ? "on" : "off"}" title="${esc(b.t)} · ${esc(b.d)}"><span class="bi">${b.i}</span><small>${esc(b.t)}</small></div>`).join("")}</div>`;
-const isStudentP = p => !!p && !p.is_admin && p.role !== "teacher" && !(p.perms || []).includes("admin");
+const isStudentP = p => isPart(p);
 // Ana səhifədəki "Medallar" kartı
 function medalsCard() {
   const u = ME(); if (!isStudentP(u)) return "";

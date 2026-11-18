@@ -107,25 +107,128 @@ function stOverview(tag) {
 /* ---------- presentations (teacher) ---------- */
 function stPres(tag) {
   if (ST.ev === "new") return stEventForm(tag, null);
-  const list = PX.ev.filter(e => e.class_tag === tag);
+  const all = PX.ev.filter(e => e.class_tag === tag), list = all.filter(e => !e.archived_at), arch = all.filter(e => e.archived_at);
   if (ST.ev && pxEv(ST.ev)) return stEvent(pxEv(ST.ev));
-  return `<div class="card"><div class="row sp"><b>${ic("present")} ${tr("Presentations")}</b><button class="ok" onclick="ST.ev='new';render()">${ic("plus")} ${tr("New presentation")}</button></div>
-    ${list.map(e => `<div class="li" onclick="ST.ev=${e.id};render()">${ic("present")}<div class="g"><b>${esc(e.title)}</b><br><small class="mu">${pxStatus(e.status)}${e.starts_at ? " · " + pxDate(e.starts_at) : ""} · ${pxTeams(e.id).length} ${tr("Teams")}</small></div><span>›</span></div>`).join("") || `<p class="mu">${tr("No presentations yet")}</p>`}</div>`;
+  return `<div class="card"><div class="row sp"><b>${ic("present")} ${tr("Presentations")}</b><div class="row wrap"><button class="s" onclick="stEndDay('${esc(tag)}')">${ic("archive")} ${tr("End the day")}</button><button class="ok" onclick="ST.ev='new';ST.draft=null;ST.newTopics=null;ST.topicsErr=null;render()">${ic("plus")} ${tr("New presentation")}</button></div></div>
+    ${list.map(e => `<div class="li" onclick="ST.ev=${e.id};render()">${ic("present")}<div class="g"><b>${esc(e.title)}</b><br><small class="mu">${pxStatus(e.status)}${e.starts_at ? " · " + pxDate(e.starts_at) : ""} · ${pxTeams(e.id).length} ${tr("Teams")}</small></div><span>›</span></div>`).join("") || `<p class="mu">${tr("No presentations yet")}</p>`}</div>`
+    + (arch.length ? `<details class="card"><summary><b>${ic("archive")} ${tr("Archived")}</b> <small class="mu">${arch.length}</small></summary>${arch.map(e => `<div class="li" onclick="ST.ev=${e.id};render()">${ic("archive")}<div class="g"><b>${esc(e.title)}</b><br><small class="mu">${pxDate(e.archived_at)}</small></div><span>›</span></div>`).join("")}</details>` : "");
 }
 function stEventForm(tag, e) {
+  const dr = (!e && ST.draft) || {}, nt = !e && ST.newTopics, v = (k, x) => esc(dr[k] != null ? dr[k] : x);
+  // ADIAK 1.2: a new presentation = (1) title, (2) the teacher's topic list as a TXT/DOCX file (replaces the description)
+  const topics = e ? (e.descr ? `<label>${tr("Note")}<textarea id="std" maxlength="1000" rows="2">${esc(e.descr)}</textarea></label>` : "")
+    : `<div class="stfile"><b>${tr("Step 2 · Topic list")}</b><p class="mu">${tr("Upload your list of topics as TXT or Word (DOCX), one topic per line or paragraph. Students choose from it.")}</p>
+      <label class="btn s upl">${ic("upload")} ${nt ? tr("Choose another file") : tr("Upload topic list")}<input type="file" hidden accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document" onchange="stTopicsFile(this,'new')"></label>
+      ${ST.topicsErr ? `<p class="err" role="alert">${esc(ST.topicsErr)}</p>` : ""}${ST.topicsBusy ? `<p class="mu">${tr("Reading the file…")}</p>` : ""}
+      ${nt ? `<p class="mu"><b>${esc(nt.name)}</b> · ${tr("{n} topics found", { n: nt.items.length })} <button class="s sm" onclick="ST.newTopics=null;stKeepDraft();render()">${tr("Remove")}</button></p><ol class="pxtl prev">${nt.items.map(x => `<li>${esc(x)}</li>`).join("")}</ol>` : ""}
+      <label>${tr("Students per topic (0 = unlimited)")}${stInput("stmax", `type="number" min="0" max="50" value="${v("stmax", 1)}"`)}</label></div>`;
   return `<div class="card"><b>${ic("present")} ${e ? tr("Edit") : tr("New presentation")}</b><div class="stform">
-    <label>${tr("Title")}${stInput("stt", `maxlength="80" value="${esc(e ? e.title : "")}"`)}</label>
-    <label>${tr("Description")}<textarea id="std" maxlength="1000" rows="3">${esc(e ? e.descr : "")}</textarea></label>
-    <label>${tr("Start time")}${stInput("sts", `type="datetime-local" value="${stLocal(e && e.starts_at)}"`)}</label>
-    ${!e || e.status === "draft" ? `<label>${tr("Final deadline")}${stInput("stdue", `type="datetime-local" value="${stLocal(e && e.final_due)}"`)}</label>` : ""}
-    <label>${tr("Minutes per team")}${stInput("stm", `type="number" min="1" max="60" value="${e ? e.slot_minutes : 7}"`)}</label></div>
-    <div class="row"><button class="s" onclick="ST.ev=${e ? e.id : "null"};render()">${tr("Cancel")}</button><button class="ok" onclick="stSaveEvent(${e ? e.id : "null"},'${esc(tag)}')">${e ? tr("Save") : tr("Create")}</button></div></div>`;
+    <label>${e ? tr("Title") : tr("Step 1 · Title")}${stInput("stt", `maxlength="80" value="${v("stt", e ? e.title : "")}"`)}</label>
+    ${topics}
+    <label>${tr("Start time")}${stInput("sts", `type="datetime-local" value="${v("sts", stLocal(e && e.starts_at))}"`)}</label>
+    ${!e || e.status === "draft" ? `<label>${tr("Final deadline")}${stInput("stdue", `type="datetime-local" value="${v("stdue", stLocal(e && e.final_due))}"`)}</label>` : ""}
+    <label>${tr("Minutes per team")}${stInput("stm", `type="number" min="1" max="60" value="${v("stm", e ? e.slot_minutes : 7)}"`)}</label></div>
+    <div class="row"><button class="s" onclick="ST.ev=${e ? e.id : "null"};ST.edit=null;ST.draft=null;ST.newTopics=null;ST.topicsErr=null;render()">${tr("Cancel")}</button><button class="ok" ${ST.saving ? "disabled" : ""} onclick="stSaveEvent(${e ? e.id : "null"},'${esc(tag)}')">${ST.saving ? tr("Saving…") : e ? tr("Save") : tr("Create")}</button></div></div>`;
 }
+const stKeepDraft = () => { ST.draft = { stt: stVal("stt"), sts: stVal("sts"), stdue: stVal("stdue"), stm: stVal("stm"), stmax: stVal("stmax") }; };
 async function stSaveEvent(id, tag) {
-  const e = id && pxEv(id), due = (!e || e.status === "draft") ? stIso("stdue") : e.final_due;
-  const r = await pxCall("pres_event_save", { e: id, cls: tag, ttl: stVal("stt"), dsc: stVal("std"), starts: stIso("sts"), due, slot: +stVal("stm") || 7 }, tr("Saved ✓"));
-  if (r) { ST.ev = typeof r === "number" ? r : id; }
+  const e = id && pxEv(id), due = (!e || e.status === "draft") ? stIso("stdue") : e.final_due, nt = !e && ST.newTopics, mx = parseInt(stVal("stmax"), 10);
+  if (ST.saving) return;
+  if (!e && !nt && !confirm(tr("No topic list uploaded. Create the presentation without topics? You can add them later."))) return;
+  stKeepDraft(); ST.saving = true; render();
+  try {
+    const r = await pxCall("pres_event_save", { e: id, cls: tag, ttl: stVal("stt") || (ST.draft || {}).stt, dsc: e ? (stVal("std") || e.descr || "") : "", starts: stIso("sts"), due, slot: +stVal("stm") || 7 }, e ? tr("Saved ✓") : null);
+    if (!r) return;
+    const eid = typeof r === "number" ? r : id;
+    if (nt && await pxCall("pres_topics_add", { e: eid, items: nt.items, src: nt.name }) && Number.isFinite(mx) && mx !== 1) await pxCall("pres_topic_limit", { e: eid, n: mx });
+    if (!e) toast(nt ? tr("Presentation created with {n} topics ✓", { n: nt.items.length }) : tr("Saved ✓"));
+    ST.ev = eid; ST.edit = null; ST.draft = null; ST.newTopics = null; ST.topicsErr = null;
+  } finally { ST.saving = false; render(); }
 }
+// topic list file -> clean lines. Errors are shown in the form (wrong type, empty, unreadable, too large).
+async function stTopicsFile(inp, mode) {
+  const f = inp.files[0]; inp.value = ""; if (!f) return;
+  if (mode === "new") stKeepDraft();
+  try { if (document.activeElement && document.activeElement.blur) document.activeElement.blur(); } catch (e) {}   // render() waits while a text field has focus
+  ST.topicsErr = null; ST.topicsBusy = true; render();
+  try {
+    const items = await stReadTopics(f);
+    if (mode === "new") ST.newTopics = { name: f.name.slice(0, 120), items };
+    else if (await pxCall("pres_topics_add", { e: mode, items, src: f.name.slice(0, 120) })) toast(tr("{n} topics read from the file ✓", { n: items.length }));
+  } catch (err) { ST.topicsErr = tr(err && err.message || "Could not read the file"); if (mode !== "new") toast(ST.topicsErr, 1); snd.err(); }
+  finally { ST.topicsBusy = false; render(); }
+}
+/* topics-parser:start — no DOM: also loaded by tests/topics-parse.mjs */
+const TOPIC_MAX_BYTES = 2 * 1024 * 1024;
+function topicClean(x) {
+  return String(x || "").replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/^\s*([-*•·–—▪●○◦]+\s*|\(?[0-9]{1,3}[.):\]]+\s*|[0-9]{1,3}\s+[-–—]\s+|[a-zA-Z][.)]\s+)/, "").replace(/\s+/g, " ").trim().slice(0, 200);
+}
+function topicLines(lines) {
+  const out = [], seen = new Set();
+  for (const l of lines) { const c = topicClean(l); if (!c) continue; const k = c.toLocaleLowerCase("az"); if (seen.has(k)) continue; seen.add(k); out.push(c); if (out.length > 300) throw new Error("A presentation can have at most 300 topics"); }
+  if (!out.length) throw new Error("The file has no topics");
+  return out;
+}
+function topicDecodeText(buf) {
+  const b = new Uint8Array(buf);
+  if (b[0] === 0xff && b[1] === 0xfe) return new TextDecoder("utf-16le").decode(b.subarray(2));
+  if (b[0] === 0xfe && b[1] === 0xff) return new TextDecoder("utf-16be").decode(b.subarray(2));
+  try { return new TextDecoder("utf-8", { fatal: true }).decode(b); } catch (e) { return new TextDecoder("windows-1254").decode(b); }
+}
+const xmlText = s => s.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&apos;/g, "'").replace(/&#(\d+);/g, (_, n) => String.fromCodePoint(+n)).replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16))).replace(/&amp;/g, "&");
+// minimal ZIP reader: finds one entry and inflates it with the browser's DecompressionStream
+async function zipEntry(buf, want) {
+  const d = new DataView(buf), u8 = new Uint8Array(buf); let eocd = -1;
+  for (let i = buf.byteLength - 22; i >= Math.max(0, buf.byteLength - 65557); i--) if (d.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+  if (eocd < 0) throw new Error("This is not a valid DOCX file");
+  let p = d.getUint32(eocd + 16, true); const n = d.getUint16(eocd + 10, true);
+  for (let k = 0; k < n; k++) {
+    if (d.getUint32(p, true) !== 0x02014b50) break;
+    const method = d.getUint16(p + 10, true), csize = d.getUint32(p + 20, true), nl = d.getUint16(p + 28, true), xl = d.getUint16(p + 30, true), cl = d.getUint16(p + 32, true), lo = d.getUint32(p + 42, true);
+    const name = new TextDecoder().decode(u8.subarray(p + 46, p + 46 + nl));
+    if (name === want) {
+      const start = lo + 30 + d.getUint16(lo + 26, true) + d.getUint16(lo + 28, true), raw = u8.subarray(start, start + csize);
+      if (method === 0) return new TextDecoder().decode(raw);
+      if (method !== 8) throw new Error("This is not a valid DOCX file");
+      if (typeof DecompressionStream === "undefined") throw new Error("This device cannot read DOCX files. Save the list as TXT and try again.");
+      const st = new Blob([raw]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+      return await new Response(st).text();
+    }
+    p += 46 + nl + xl + cl;
+  }
+  throw new Error("This is not a valid DOCX file");
+}
+async function docxLines(buf) {
+  const xml = await zipEntry(buf, "word/document.xml");
+  return xml.split(/<\/w:p>/).map(par => (par.match(/<w:t(?:\s[^>]*)?>[^<]*<\/w:t>|<w:tab\/>|<w:br\/>/g) || [])
+    .map(t => t.startsWith("<w:t") && !t.startsWith("<w:tab") ? xmlText(t.replace(/^<w:t(?:\s[^>]*)?>/, "").replace(/<\/w:t>$/, "")) : " ").join(""));
+}
+async function stReadTopics(f) {
+  const ext = (String(f.name).split(".").pop() || "").toLowerCase();
+  if (ext !== "txt" && ext !== "docx") throw new Error(ext === "doc" ? "Old Word (.doc) files are not supported. Save as DOCX or TXT." : "Only TXT and DOCX files are supported");
+  if (!f.size) throw new Error("The file is empty");
+  if (f.size > TOPIC_MAX_BYTES) throw new Error("The file is too large (max 2 MB)");
+  const buf = await f.arrayBuffer();
+  return topicLines(ext === "txt" ? topicDecodeText(buf).split(/\r\n|\r|\n/) : await docxLines(buf));
+}
+/* topics-parser:end */
+// topic manager on the event page: list, who picked what, edit / remove / release, add more, per-topic limit
+function stTopics(e, frozen) {
+  const tps = PX.tp.filter(t => t.event_id === e.id && !t.removed_at).sort((a, b) => a.position - b.position), picks = PX.tpk.filter(p => p.event_id === e.id);
+  const max = e.topic_max == null ? 1 : e.topic_max, nopick = pxTeams(e.id).flatMap(t => pxActive(e.id, t.group_id)).filter(r => !picks.some(p => p.user_id === r.user_id));
+  return `<div class="card"><div class="row sp"><b>${ic("tasks")} ${tr("Topics")}</b><small class="mu">${e.topics_source ? esc(e.topics_source) + " · " : ""}${tr("{a} of {b} students chose", { a: picks.length, b: picks.length + nopick.length })}</small></div>
+    ${ST.topicsErr && ST.ev === e.id ? `<p class="err" role="alert">${esc(ST.topicsErr)}</p>` : ""}${ST.topicsBusy ? `<p class="mu">${tr("Reading the file…")}</p>` : ""}
+    ${tps.length ? `<ol class="pxtl">${tps.map(t => { const who = picks.filter(p => p.topic_id === t.id);
+      return `<li><span class="ordn">${t.position}</span><div class="g"><b>${esc(t.title)}</b>${who.length ? `<br><small>${who.map(p => `${esc(p.user_name)}${!frozen ? ` <button class="s sm" aria-label="${tr("Release")}: ${esc(p.user_name)}" onclick="stTopicRelease(${e.id},'${p.user_id}')">✕</button>` : ""}`).join(" · ")}</small>` : `<br><small class="mu">${tr("Free")}</small>`}</div>
+        ${!frozen ? `<button class="s sm" onclick="stTopicEdit(${t.id})" aria-label="${tr("Edit")}">${ic("edit")}</button><button class="s sm" onclick="stTopicRemove(${t.id})" aria-label="${tr("Remove")}">${ic("trash")}</button>` : ""}</li>`; }).join("")}</ol>` : `<p class="mu">${tr("No topics yet. Upload a TXT or DOCX list.")}</p>`}
+    ${nopick.length ? `<p class="mu">${tr("Not chosen yet")}: ${nopick.map(r => esc(r.user_name)).join(", ")}</p>` : ""}
+    ${!frozen ? `<div class="row wrap" style="margin-top:8px"><label class="btn s upl">${ic("upload")} ${tr("Add topics from a file")}<input type="file" hidden accept=".txt,.docx" onchange="stTopicsFile(this,${e.id})"></label>
+      <label class="row" style="gap:6px">${tr("Students per topic (0 = unlimited)")} <input id="stmax${e.id}" type="number" min="0" max="50" value="${max}" style="width:70px"></label><button class="s sm" onclick="stTopicLimit(${e.id})">${tr("Save")}</button></div>` : ""}</div>`;
+}
+function stTopicEdit(tid) { const t = PX.tp.find(x => x.id === tid); if (!t) return; const v = prompt(tr("Topic"), t.title); if (v && v.trim() && v.trim() !== t.title) pxCall("pres_topic_edit", { tid, ttl: v }, tr("Saved ✓")); }
+function stTopicRemove(tid) { const t = PX.tp.find(x => x.id === tid); if (!t) return; ask(tr("Remove the topic “{t}”? Students who chose it must choose again.", { t: esc(t.title) }), () => pxCall("pres_topic_remove", { tid }, tr("Removed"))); }
+function stTopicRelease(e, who) { ask(tr("Release this student's topic choice?"), () => pxCall("pres_topic_release", { e, who }, tr("Released"))); }
+function stTopicLimit(e) { const n = parseInt(stVal("stmax" + e), 10); if (!Number.isFinite(n)) return; pxCall("pres_topic_limit", { e, n }, tr("Saved ✓")); }
 function stEvent(e) {
   const teams = pxTeams(e.id), d = pxDraw(e.id), all = PX.dr.filter(x => x.event_id === e.id).sort((a, b) => b.round - a.round), groups = G.filter(g => g.class_tag === e.class_tag);
   const frozen = !!e.frozen_at || ["live", "done"].includes(e.status), rb = PX.rb.filter(r => r.event_id === e.id).sort((a, b) => b.version - a.version)[0];
@@ -141,14 +244,15 @@ function stEvent(e) {
       <small class="mu">${pxStatus(e.status)} · ${tr("Starts")}: ${pxDate(e.starts_at)} · ${tr("Deadline")}: ${pxDate(e.final_due)} · ${e.slot_minutes} ${tr("minutes")}</small></div></div><div class="stqa">${actions}</div></div>
    <div class="card"><b>${ic("groups")} ${tr("Participating teams")}</b><div class="stteams">${groups.map(g => { const on = teams.some(t => t.group_id === g.id);
       return `<label class="stchk"><input type="checkbox" ${on ? "checked" : ""} ${frozen ? "disabled" : ""} onchange="stTeamToggle(${e.id},${g.id},this.checked)"> ${esc(g.name)} <small class="mu">${mem(g.id).length} ${tr("members")}</small></label>`; }).join("") || `<p class="mu">${tr("No teams")}</p>`}</div></div>
-   <div class="card"><b>${ic("present")} ${tr("Teams")}</b><table class="sttab"><thead><tr><th>#</th><th>${tr("Team")}</th><th>${tr("Order")}</th><th>${tr("Final file")}</th></tr></thead><tbody>
-     ${teams.map(t => { const pos = d ? d.result.indexOf(t.group_id) + 1 : "–", sub = PX.sub.find(s => s.event_id === e.id && s.group_id === t.group_id && (s.state === "submitted" || s.state === "approved"));
-       return `<tr><td>${pos || "–"}</td><td><b>${esc(t.group_name)}</b></td><td>${pxStateChip(t.speak_state)}
-         ${t.speak_state === "submitted" ? `<button class="s sm" onclick="pxCall('pres_approve_order',{e:${e.id},g:${t.group_id}})">${tr("Approve")}</button>` : ""}
-         ${["submitted", "approved", "needs_review"].includes(t.speak_state) && !frozen ? `<button class="s sm" onclick="stReturnOrder(${e.id},${t.group_id})">${tr("Return")}</button>` : ""}</td>
-         <td>${sub ? `<button class="s sm" onclick="pxOpenFile(${sub.file_id})">${ic("eye")} v${sub.version}</button> ${pxStateChip(sub.state)}
-           ${sub.state === "submitted" ? `<button class="ok sm" onclick="pxCall('pres_review_final',{sid:${sub.id},decision:'approve',msg:null},tr('Approved'))">${tr("Approve")}</button>` : ""}
-           <button class="s sm" onclick="stReturnFinal(${sub.id})">${tr("Return")}</button>` : pxStateChip(t.final_state)}</td></tr>`; }).join("")}</tbody></table></div>
+   ${stTopics(e, frozen)}
+   <div class="card"><b>${ic("present")} ${tr("Teams")}</b><p class="mu" style="margin:4px 0 8px">${tr("Students' speaking order and final file take effect without your approval. You can still return a final for corrections.")}</p><table class="sttab"><thead><tr><th>#</th><th>${tr("Team")}</th><th>${tr("Order")}</th><th>${tr("Final file")}</th><th>${tr("Files")}</th></tr></thead><tbody>
+     ${teams.map(t => { const pos = d ? d.result.indexOf(t.group_id) + 1 : "–", sub = PX.sub.find(s => s.event_id === e.id && s.group_id === t.group_id && (s.state === "submitted" || s.state === "approved")),
+         nf = PX.fl.filter(f => f.event_id === e.id && f.group_id === t.group_id).length, open = ST.files === e.id + ":" + t.group_id;
+       return `<tr><td>${pos || "–"}</td><td><b>${esc(t.group_name)}</b></td><td>${pxStateChip(t.speak_state)} ${stOrderNames(e.id, t.group_id)}</td>
+         <td>${sub ? `<button class="s sm" onclick="pxOpenFile(${sub.file_id})">${ic("eye")} v${sub.version}</button> ${pxChip(tr("Final"), "on")}
+           ${!frozen ? `<button class="s sm" onclick="stReturnFinal(${sub.id})">${tr("Return")}</button>` : ""}` : pxStateChip(t.final_state)}</td>
+         <td><button class="s sm" aria-expanded="${open}" onclick="ST.files=${open ? "null" : `'${e.id}:${t.group_id}'`};render()">${ic("file")} ${nf}</button></td></tr>
+         ${open ? `<tr><td colspan="5">${stTeamFiles(e.id, t.group_id)}</td></tr>` : ""}`; }).join("")}</tbody></table></div>
    ${all.length ? `<div class="card"><b>${ic("dice")} ${tr("Draw history")}</b>${all.map(x => `<div class="pxlog"><span>${tr("Round {n}", { n: x.round })}: ${x.result.map(g => esc((pxTeam(e.id, g) || {}).group_name || "?")).join(" → ")}</span>
       <span class="mu">${esc(pxPersonName(x.drawn_by))}${x.reason ? " · " + esc(x.reason) : ""}${x.superseded_at ? " · " + tr("History") : ""}</span><small class="mu">${pxDate(x.created_at)}</small></div>`).join("")}</div>` : ""}
    <div class="card"><b>${ic("megaphone")} ${tr("Announcement for the event")}</b><div class="row"><textarea id="stan" rows="2" maxlength="2000" style="flex:1"></textarea><button class="ok" onclick="stAnnounceEvent(${e.id})">${tr("Post")}</button></div>
@@ -156,6 +260,21 @@ function stEvent(e) {
    ${stRubric(e, rb)}
    <div class="card"><div class="row sp"><b>${ic("star")} ${tr("Feedback")}</b>${e.scores_published_at ? pxChip(tr("Published"), "on") : pxChip(tr("Not published"))}</div>
      <p class="mu">${sc.length} ${tr("scored")}</p>${["live", "done"].includes(e.status) ? `<button class="${e.scores_published_at ? "s" : "ok"}" onclick="pxCall('pres_publish_scores',{e:${e.id},pub:${!e.scores_published_at}})">${e.scores_published_at ? tr("Hide feedback") : tr("Publish feedback")}</button>` : ""}</div>`;
+}
+// every file a team uploaded (not only the chosen final), newest first — feedback #11
+function stTeamFiles(e, g) {
+  const fl = PX.fl.filter(f => f.event_id === e && f.group_id === g).sort((a, b) => b.id - a.id);
+  if (!fl.length) return `<p class="mu">${tr("No files yet")}</p>`;
+  return fl.map(f => `<div class="li pxfile${f.hidden_at ? " hid" : ""}"><span class="ic2">${ic("file")}</span><div class="g"><b>${esc(f.name)}</b>${f.hidden_at ? " " + pxChip(tr("Hidden")) : ""}<br><small class="mu">${esc(f.uploader_name)} · ${pxDate(f.created_at)} · ${fsize(f.size)}</small></div><div class="pxfa"><button class="s" onclick="pxOpenFile(${f.id})" aria-label="${tr("Open")}">${ic("eye")}</button></div></div>`).join("");
+}
+const stOrderNames = (e, g) => { const sp = PX.sp.filter(s => s.event_id === e && s.group_id === g && !s.withdrawn).sort((a, b) => a.position - b.position);
+  return sp.length ? `<br><small class="mu">${sp.map(s => s.position + ". " + esc(pxPersonName(s.user_id))).join(" · ")}</small>` : ""; };
+// ADIAK 1.2: "Günü bitir" for the teacher's class: chats + the day's finished presentations go to one archive (atomic, no duplicates)
+function stEndDay(tag) {
+  ask(tr("End the day for class {c}? The class chats and today's finished presentations (files, finals, order, topics) are moved to the archive.", { c: esc(tag) }), async () => {
+    const r = await pxCall("close_day", { lbl: null, dissolve: false, cls: tag });
+    if (r && typeof r === "object") toast(tr("Day closed: {m} messages and {p} presentations archived.", { m: r.messages || 0, p: r.presentations || 0 }) + (r.skipped_live ? " " + tr("{n} live presentation(s) skipped.", { n: r.skipped_live }) : ""));
+  }, tr("End the day"));
 }
 async function stTeamToggle(e, g, on) {
   const d = pxDraw(e); let reason = null;
